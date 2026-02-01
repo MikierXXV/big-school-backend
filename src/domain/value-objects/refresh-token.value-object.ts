@@ -29,6 +29,8 @@
  * - Detección de reuso indica compromiso
  */
 
+import { InvalidRefreshTokenError } from '../errors/authentication.errors.js';
+
 /**
  * Estado del Refresh Token
  */
@@ -60,7 +62,7 @@ export interface RefreshTokenMetadata {
   /** Estado actual del token */
   readonly status: RefreshTokenStatus;
   /** Información del dispositivo/sesión (opcional) */
-  readonly deviceInfo?: string;
+  readonly deviceInfo?: string | undefined;
 }
 
 /**
@@ -122,6 +124,10 @@ export class RefreshToken {
     expiresAt: Date,
     deviceInfo?: string
   ): RefreshToken {
+    if (!tokenValue || tokenValue.trim() === '') {
+      throw new InvalidRefreshTokenError('Token value cannot be empty');
+    }
+
     const metadata: RefreshTokenMetadata = {
       tokenId,
       userId,

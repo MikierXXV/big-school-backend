@@ -30,6 +30,8 @@
  * 6. Middleware de infraestructura valida el token
  */
 
+import { InvalidAccessTokenError } from '../errors/authentication.errors.js';
+
 /**
  * Metadatos del Access Token
  */
@@ -98,7 +100,9 @@ export class AccessToken {
     issuedAt: Date,
     expiresAt: Date
   ): AccessToken {
-    // TODO: Validaciones
+    if (!tokenValue || tokenValue.trim() === '') {
+      throw new InvalidAccessTokenError('Token value cannot be empty');
+    }
 
     const metadata: AccessTokenMetadata = {
       issuedAt,

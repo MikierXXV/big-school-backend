@@ -27,6 +27,8 @@
  * - argon2 produce hashes de ~97 caracteres
  */
 
+import { InvalidPasswordHashError } from '../errors/user.errors.js';
+
 /**
  * Value Object que representa una contraseña hasheada.
  * Inmutable y seguro por diseño.
@@ -46,13 +48,27 @@ export class PasswordHash {
 
   /**
    * Constructor privado para forzar el uso de factory methods.
-   * @param value - El hash de la contraseña
-   *
-   * TODO: Validar que el hash tenga formato válido
-   * TODO: Lanzar InvalidPasswordHashError si es inválido
+   * @param value - El hash de la contraseña (ya validado)
    */
   private constructor(value: string) {
     this._value = value;
+  }
+
+  /**
+   * Valida que el hash sea válido.
+   * @param hash - El hash a validar
+   * @throws InvalidPasswordHashError si el hash no es válido
+   */
+  private static validate(hash: string): void {
+    if (!hash || hash.trim() === '') {
+      throw new InvalidPasswordHashError('Password hash cannot be empty');
+    }
+
+    if (hash.length < PasswordHash.MIN_HASH_LENGTH) {
+      throw new InvalidPasswordHashError(
+        `Password hash must be at least ${PasswordHash.MIN_HASH_LENGTH} characters`
+      );
+    }
   }
 
   /**
@@ -61,15 +77,10 @@ export class PasswordHash {
    *
    * @param hashedValue - El hash recuperado de persistencia
    * @returns Instancia de PasswordHash
-   *
-   * TODO: Validar longitud mínima del hash
-   * TODO: Validar que no esté vacío
+   * @throws InvalidPasswordHashError si el hash no es válido
    */
   public static fromHash(hashedValue: string): PasswordHash {
-    // TODO: Validar que hashedValue no esté vacío
-    // TODO: Validar longitud mínima
-    // TODO: Lanzar error si es inválido
-
+    PasswordHash.validate(hashedValue);
     return new PasswordHash(hashedValue);
   }
 
@@ -79,9 +90,10 @@ export class PasswordHash {
    *
    * @param newlyHashedPassword - Hash generado por el servicio de hashing
    * @returns Instancia de PasswordHash
+   * @throws InvalidPasswordHashError si el hash no es válido
    */
   public static fromNewlyHashed(newlyHashedPassword: string): PasswordHash {
-    // TODO: Validar el hash antes de crear
+    PasswordHash.validate(newlyHashedPassword);
     return new PasswordHash(newlyHashedPassword);
   }
 
