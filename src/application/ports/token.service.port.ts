@@ -45,9 +45,9 @@ export interface RefreshTokenPayload {
   /** ID único del token (para tracking) */
   readonly tokenId: string;
   /** ID del token padre (para rotación) */
-  readonly parentTokenId?: string;
+  readonly parentTokenId?: string | undefined;
   /** Info del dispositivo */
-  readonly deviceInfo?: string;
+  readonly deviceInfo?: string | undefined;
 }
 
 /**
