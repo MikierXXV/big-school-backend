@@ -26,6 +26,8 @@ import { UserRepository } from '../../../domain/repositories/user.repository.int
 import { User } from '../../../domain/entities/user.entity.js';
 import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { Email } from '../../../domain/value-objects/email.value-object.js';
+import { UserAlreadyExistsError } from '../../../domain/errors/user.errors.js';
+import { WeakPasswordError } from '../../../domain/errors/authentication.errors.js';
 import { IHashingService } from '../../ports/hashing.service.port.js';
 import { IUuidGenerator } from '../../ports/uuid-generator.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
@@ -34,6 +36,10 @@ import {
   RegisterUserRequestDto,
   RegisterUserResponseDto,
 } from '../../dtos/auth/register.dto.js';
+import {
+  PasswordMismatchError,
+  TermsNotAcceptedError,
+} from '../../errors/validation.errors.js';
 
 /**
  * Dependencias del caso de uso RegisterUser.
@@ -75,76 +81,72 @@ export class RegisterUserUseCase {
    * @throws UserAlreadyExistsError si el email ya está registrado
    * @throws InvalidEmailError si el email tiene formato inválido
    * @throws WeakPasswordError si la contraseña no cumple requisitos
-   *
-   * TODO: Implementar la lógica del caso de uso
+   * @throws PasswordMismatchError si las contraseñas no coinciden
+   * @throws TermsNotAcceptedError si no acepta términos
    */
   public async execute(
     request: RegisterUserRequestDto
   ): Promise<RegisterUserResponseDto> {
-    // TODO: Implementar los siguientes pasos:
-
     // 1. Log inicio de operación
-    // this.deps.logger.info('Starting user registration', { email: request.email });
+    this.deps.logger.info('Starting user registration', { email: request.email });
 
     // 2. Validar que las contraseñas coincidan
-    // if (request.password !== request.passwordConfirmation) {
-    //   throw new PasswordMismatchError();
-    // }
+    if (request.password !== request.passwordConfirmation) {
+      throw new PasswordMismatchError();
+    }
 
     // 3. Validar que aceptó términos
-    // if (!request.acceptTerms) {
-    //   throw new TermsNotAcceptedError();
-    // }
+    if (!request.acceptTerms) {
+      throw new TermsNotAcceptedError();
+    }
 
-    // 4. Crear Value Object Email (validación incluida)
-    // const email = Email.create(request.email);
+    // 4. Validar fortaleza de contraseña
+    this.validatePasswordStrength(request.password);
 
-    // 5. Verificar que el email no esté registrado
-    // const existingUser = await this.deps.userRepository.existsByEmail(email);
-    // if (existingUser) {
-    //   throw new UserAlreadyExistsError(email.value);
-    // }
+    // 5. Crear Value Object Email (validación incluida)
+    const email = Email.create(request.email);
 
-    // 6. Validar fortaleza de contraseña
-    // this.validatePasswordStrength(request.password);
+    // 6. Verificar que el email no esté registrado
+    const existingUser = await this.deps.userRepository.existsByEmail(email);
+    if (existingUser) {
+      this.deps.logger.warn('Registration failed: email already exists', { email: request.email });
+      throw new UserAlreadyExistsError(email.value);
+    }
 
     // 7. Hashear contraseña
-    // const passwordHash = await this.deps.hashingService.hash(request.password);
+    const passwordHash = await this.deps.hashingService.hash(request.password);
 
     // 8. Generar ID único
-    // const userId = UserId.fromGenerated(this.deps.uuidGenerator.generate());
+    const userId = UserId.fromGenerated(this.deps.uuidGenerator.generate());
 
     // 9. Crear entidad User
-    // const user = User.create({
-    //   id: userId,
-    //   email,
-    //   passwordHash,
-    //   firstName: request.firstName,
-    //   lastName: request.lastName,
-    // });
+    const user = User.create({
+      id: userId,
+      email,
+      passwordHash,
+      firstName: request.firstName,
+      lastName: request.lastName,
+    });
 
     // 10. Persistir usuario
-    // await this.deps.userRepository.save(user);
+    await this.deps.userRepository.save(user);
 
     // 11. Log éxito
-    // this.deps.logger.info('User registered successfully', { userId: userId.value });
+    this.deps.logger.info('User registered successfully', { userId: userId.value });
 
     // 12. Retornar DTO de respuesta
-    // return {
-    //   success: true,
-    //   message: 'User registered successfully. Please verify your email.',
-    //   user: {
-    //     id: user.id.value,
-    //     email: user.email.value,
-    //     fullName: user.fullName,
-    //     status: user.status,
-    //     createdAt: user.createdAt.toISOString(),
-    //     requiresEmailVerification: true,
-    //   },
-    // };
-
-    // Placeholder hasta implementar
-    throw new Error('RegisterUserUseCase not implemented');
+    return {
+      success: true,
+      message: 'User registered successfully. Please verify your email.',
+      user: {
+        id: user.id.value,
+        email: user.email.value,
+        fullName: user.fullName,
+        status: user.status,
+        createdAt: user.createdAt.toISOString(),
+        requiresEmailVerification: true,
+      },
+    };
   }
 
   /**
@@ -159,31 +161,28 @@ export class RegisterUserUseCase {
    * - Al menos una minúscula
    * - Al menos un número
    * - Al menos un carácter especial
-   *
-   * TODO: Implementar validación
    */
-  private validatePasswordStrength(_password: string): void {
-    // TODO: Implementar validaciones
-    // const missingRequirements: string[] = [];
-    //
-    // if (password.length < 8) {
-    //   missingRequirements.push('Minimum 8 characters');
-    // }
-    // if (!/[A-Z]/.test(password)) {
-    //   missingRequirements.push('At least one uppercase letter');
-    // }
-    // if (!/[a-z]/.test(password)) {
-    //   missingRequirements.push('At least one lowercase letter');
-    // }
-    // if (!/\d/.test(password)) {
-    //   missingRequirements.push('At least one number');
-    // }
-    // if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    //   missingRequirements.push('At least one special character');
-    // }
-    //
-    // if (missingRequirements.length > 0) {
-    //   throw new WeakPasswordError(missingRequirements);
-    // }
+  private validatePasswordStrength(password: string): void {
+    const missingRequirements: string[] = [];
+
+    if (password.length < 8) {
+      missingRequirements.push('Minimum 8 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+      missingRequirements.push('At least one uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+      missingRequirements.push('At least one lowercase letter');
+    }
+    if (!/\d/.test(password)) {
+      missingRequirements.push('At least one number');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      missingRequirements.push('At least one special character');
+    }
+
+    if (missingRequirements.length > 0) {
+      throw new WeakPasswordError(missingRequirements);
+    }
   }
 }
