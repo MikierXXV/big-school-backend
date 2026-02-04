@@ -65,40 +65,43 @@ export const TOKEN_EXPIRATION = {
  * TODO: Validar que las claves sean suficientemente fuertes
  */
 export function loadJwtConfig(): JwtConfig {
-  // TODO: Implementar
-  // const accessSecret = process.env.JWT_ACCESS_SECRET;
-  // const refreshSecret = process.env.JWT_REFRESH_SECRET;
-  //
-  // if (!accessSecret || accessSecret.length < 32) {
-  //   throw new Error('JWT_ACCESS_SECRET must be at least 32 characters');
-  // }
-  // if (!refreshSecret || refreshSecret.length < 32) {
-  //   throw new Error('JWT_REFRESH_SECRET must be at least 32 characters');
-  // }
-  //
-  // return {
-  //   accessToken: {
-  //     secret: accessSecret,
-  //     expirationSeconds: parseInt(
-  //       process.env.JWT_ACCESS_EXPIRATION || String(TOKEN_EXPIRATION.ACCESS_TOKEN),
-  //       10
-  //     ),
-  //     algorithm: 'HS256',
-  //   },
-  //   refreshToken: {
-  //     secret: refreshSecret,
-  //     expirationSeconds: parseInt(
-  //       process.env.JWT_REFRESH_EXPIRATION || String(TOKEN_EXPIRATION.REFRESH_TOKEN),
-  //       10
-  //     ),
-  //     algorithm: 'HS256',
-  //   },
-  //   issuer: process.env.JWT_ISSUER || 'big-school-api',
-  //   audience: process.env.JWT_AUDIENCE || 'big-school-client',
-  // };
+  const accessSecret = process.env.JWT_ACCESS_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET;
 
-  // Placeholder
-  throw new Error('loadJwtConfig not implemented');
+  if (!accessSecret) {
+    throw new Error('JWT_ACCESS_SECRET environment variable is required');
+  }
+  if (!isValidJwtSecret(accessSecret)) {
+    throw new Error('JWT_ACCESS_SECRET must be at least 32 characters');
+  }
+
+  if (!refreshSecret) {
+    throw new Error('JWT_REFRESH_SECRET environment variable is required');
+  }
+  if (!isValidJwtSecret(refreshSecret)) {
+    throw new Error('JWT_REFRESH_SECRET must be at least 32 characters');
+  }
+
+  return {
+    accessToken: {
+      secret: accessSecret,
+      expirationSeconds: parseInt(
+        process.env.JWT_ACCESS_EXPIRATION || String(TOKEN_EXPIRATION.ACCESS_TOKEN),
+        10
+      ),
+      algorithm: 'HS256',
+    },
+    refreshToken: {
+      secret: refreshSecret,
+      expirationSeconds: parseInt(
+        process.env.JWT_REFRESH_EXPIRATION || String(TOKEN_EXPIRATION.REFRESH_TOKEN),
+        10
+      ),
+      algorithm: 'HS256',
+    },
+    issuer: process.env.JWT_ISSUER || 'big-school-api',
+    audience: process.env.JWT_AUDIENCE || 'big-school-client',
+  };
 }
 
 /**
