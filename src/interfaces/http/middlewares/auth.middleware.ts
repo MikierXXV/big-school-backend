@@ -18,10 +18,7 @@
  */
 
 import { HttpRequest, HttpResponse } from '../controllers/auth.controller.js';
-import {
-  ITokenService,
-  AccessTokenPayload,
-} from '../../../application/ports/token.service.port.js';
+import { ITokenService } from '../../../application/ports/token.service.port.js';
 
 /**
  * Request con información de usuario autenticado.
@@ -75,57 +72,48 @@ export class AuthMiddleware {
    *
    * @param request - Request HTTP
    * @returns Resultado con usuario o respuesta de error
-   *
-   * TODO: Implementar validación
    */
   public async authenticate(
     request: HttpRequest
   ): Promise<AuthMiddlewareResult> {
-    // TODO: Implementar
-    // 1. Extraer Authorization header
-    // const authHeader = request.headers['authorization'];
-    // if (!authHeader) {
-    //   return {
-    //     success: false,
-    //     response: this.unauthorizedResponse('Missing authorization header'),
-    //   };
-    // }
-    //
-    // 2. Validar formato "Bearer <token>"
-    // const parts = authHeader.split(' ');
-    // if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    //   return {
-    //     success: false,
-    //     response: this.unauthorizedResponse('Invalid authorization format'),
-    //   };
-    // }
-    //
-    // const token = parts[1];
-    //
-    // 3. Validar token
-    // const validationResult = await this.tokenService.validateAccessToken(token);
-    // if (!validationResult.isValid) {
-    //   const message = validationResult.error === 'expired'
-    //     ? 'Token has expired'
-    //     : 'Invalid token';
-    //   return {
-    //     success: false,
-    //     response: this.unauthorizedResponse(message, validationResult.error),
-    //   };
-    // }
-    //
-    // 4. Retornar usuario
-    // return {
-    //   success: true,
-    //   user: {
-    //     userId: validationResult.payload!.userId,
-    //     email: validationResult.payload!.email,
-    //     claims: validationResult.payload!.claims,
-    //   },
-    // };
+    // 1. Extract Authorization header
+    const authHeader = request.headers['authorization'];
+    if (!authHeader) {
+      return {
+        success: false,
+        response: this.unauthorizedResponse('Missing authorization header'),
+      };
+    }
 
-    // Placeholder
-    throw new Error('AuthMiddleware.authenticate not implemented');
+    // 2. Extract and validate Bearer token format
+    const token = extractBearerToken(authHeader);
+    if (!token) {
+      return {
+        success: false,
+        response: this.unauthorizedResponse('Invalid authorization format'),
+      };
+    }
+
+    // 3. Validate token with token service
+    const validationResult = await this.tokenService.validateAccessToken(token);
+    if (!validationResult.isValid) {
+      const message = validationResult.error === 'expired'
+        ? 'Token has expired'
+        : 'Invalid token';
+      return {
+        success: false,
+        response: this.unauthorizedResponse(message, validationResult.error),
+      };
+    }
+
+    // 4. Return authenticated user
+    return {
+      success: true,
+      user: {
+        userId: validationResult.payload!.userId,
+        email: validationResult.payload!.email,
+      },
+    };
   }
 
   /**
@@ -173,5 +161,11 @@ export function extractBearerToken(authHeader: string | undefined): string | nul
     return null;
   }
 
-  return parts[1] ?? null;
+  const token = parts[1];
+  // Return null for empty or whitespace-only tokens
+  if (!token || token.trim() === '') {
+    return null;
+  }
+
+  return token;
 }
