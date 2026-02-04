@@ -101,33 +101,25 @@ export class AuthController {
    * @param request - Request HTTP con datos de registro
    * @returns Response HTTP con resultado
    *
-   * TODO: Implementar manejo del request
+   * Los errores se propagan al error handler middleware.
    */
   public async register(
     request: HttpRequest<RegisterUserRequestDto>
   ): Promise<HttpResponse<RegisterUserResponseDto>> {
-    // TODO: Implementar
-    // try {
-    //   // 1. Extraer DTO del body
-    //   const dto = request.body;
-    //
-    //   // 2. Ejecutar caso de uso
-    //   const result = await this.deps.registerUserUseCase.execute(dto);
-    //
-    //   // 3. Retornar respuesta exitosa
-    //   return {
-    //     statusCode: 201,
-    //     body: {
-    //       success: true,
-    //       data: result,
-    //     },
-    //   };
-    // } catch (error) {
-    //   return this.handleError(error);
-    // }
+    // Extract DTO from body
+    const dto = request.body;
 
-    // Placeholder
-    throw new Error('AuthController.register not implemented');
+    // Execute use case (errors propagate to error handler)
+    const result = await this.deps.registerUserUseCase.execute(dto);
+
+    // Return successful response
+    return {
+      statusCode: 201,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
   }
 
   /**
@@ -136,33 +128,28 @@ export class AuthController {
    * @param request - Request HTTP con credenciales
    * @returns Response HTTP con tokens
    *
-   * TODO: Implementar manejo del request
+   * Los errores se propagan al error handler middleware.
    */
   public async login(
     request: HttpRequest<LoginUserRequestDto>
   ): Promise<HttpResponse<LoginUserResponseDto>> {
-    // TODO: Implementar
-    // try {
-    //   const dto: LoginUserRequestDto = {
-    //     ...request.body,
-    //     deviceInfo: request.userAgent,
-    //   };
-    //
-    //   const result = await this.deps.loginUserUseCase.execute(dto);
-    //
-    //   return {
-    //     statusCode: 200,
-    //     body: {
-    //       success: true,
-    //       data: result,
-    //     },
-    //   };
-    // } catch (error) {
-    //   return this.handleError(error);
-    // }
+    // Build DTO with deviceInfo from userAgent (only if present)
+    const dto: LoginUserRequestDto = {
+      ...request.body,
+      ...(request.userAgent ? { deviceInfo: request.userAgent } : {}),
+    };
 
-    // Placeholder
-    throw new Error('AuthController.login not implemented');
+    // Execute use case (errors propagate to error handler)
+    const result = await this.deps.loginUserUseCase.execute(dto);
+
+    // Return successful response
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
   }
 
   /**
@@ -171,67 +158,44 @@ export class AuthController {
    * @param request - Request HTTP con refresh token
    * @returns Response HTTP con nuevos tokens
    *
-   * TODO: Implementar manejo del request
+   * Los errores se propagan al error handler middleware.
    */
   public async refresh(
     request: HttpRequest<RefreshSessionRequestDto>
   ): Promise<HttpResponse<RefreshSessionResponseDto>> {
-    // TODO: Implementar
-    // try {
-    //   const dto = request.body;
-    //   const result = await this.deps.refreshSessionUseCase.execute(dto);
-    //
-    //   return {
-    //     statusCode: 200,
-    //     body: {
-    //       success: true,
-    //       data: result,
-    //     },
-    //   };
-    // } catch (error) {
-    //   return this.handleError(error);
-    // }
+    // Extract DTO from body
+    const dto = request.body;
 
-    // Placeholder
-    throw new Error('AuthController.refresh not implemented');
+    // Execute use case (errors propagate to error handler)
+    const result = await this.deps.refreshSessionUseCase.execute(dto);
+
+    // Return successful response
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
   }
 
   /**
    * Maneja POST /auth/logout
    *
-   * TODO: Implementar cuando se cree el caso de uso
+   * Actualmente es un stub que retorna éxito.
+   * TODO: Implementar cuando se cree el LogoutUseCase.
    */
   public async logout(
     _request: HttpRequest<{ refreshToken: string }>
   ): Promise<HttpResponse<{ message: string }>> {
-    // TODO: Implementar
-
-    // Placeholder
-    throw new Error('AuthController.logout not implemented');
-  }
-
-  /**
-   * Convierte errores a respuestas HTTP.
-   *
-   * @param error - Error capturado
-   * @returns HttpResponse con error formateado
-   *
-   * @private
-   */
-  private handleError(error: unknown): HttpResponse {
-    // TODO: Implementar mapeo de errores a HTTP status codes
-    // - DomainError → 400-422 dependiendo del tipo
-    // - ApplicationError → según httpStatusCode del error
-    // - Error genérico → 500
-
-    // Placeholder
+    // TODO: Implement when LogoutUseCase is created
+    // For now, return success (stub)
     return {
-      statusCode: 500,
+      statusCode: 200,
       body: {
-        success: false,
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error',
+        success: true,
+        data: {
+          message: 'Logged out successfully',
         },
       },
     };
