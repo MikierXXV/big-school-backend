@@ -11,6 +11,7 @@
  * - Validar formato de UUIDs
  */
 
+import { randomUUID } from 'crypto';
 import { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 
 /**
@@ -31,15 +32,7 @@ export class CryptoUuidGenerator implements IUuidGenerator {
    * TODO: Implementar usando crypto
    */
   public generate(): string {
-    // TODO: Implementar
-    // import crypto from 'crypto';
-    // return crypto.randomUUID();
-
-    // Alternativa sin import:
-    // return globalThis.crypto.randomUUID();
-
-    // Placeholder
-    throw new Error('CryptoUuidGenerator.generate not implemented');
+    return randomUUID();
   }
 
   /**

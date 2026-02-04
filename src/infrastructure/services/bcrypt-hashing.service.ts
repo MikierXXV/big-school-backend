@@ -20,6 +20,7 @@
  * - bcrypt o bcryptjs
  */
 
+import * as bcrypt from 'bcryptjs';
 import { IHashingService, HashingOptions } from '../../application/ports/hashing.service.port.js';
 import { PasswordHash } from '../../domain/value-objects/password-hash.value-object.js';
 
@@ -61,18 +62,11 @@ export class BcryptHashingService implements IHashingService {
    * TODO: Implementar usando bcrypt
    */
   public async hash(plainPassword: string): Promise<PasswordHash> {
-    // TODO: Implementar hashing
-    // import bcrypt from 'bcrypt';
-    //
-    // const hashedPassword = await bcrypt.hash(
-    //   plainPassword,
-    //   this.options.saltRounds
-    // );
-    //
-    // return PasswordHash.fromNewlyHashed(hashedPassword);
-
-    // Placeholder
-    throw new Error('BcryptHashingService.hash not implemented');
+    const hashedPassword = await bcrypt.hash(
+      plainPassword,
+      this.options.saltRounds
+    );
+    return PasswordHash.fromHash(hashedPassword);
   }
 
   /**
@@ -88,13 +82,7 @@ export class BcryptHashingService implements IHashingService {
     plainPassword: string,
     passwordHash: PasswordHash
   ): Promise<boolean> {
-    // TODO: Implementar verificación
-    // import bcrypt from 'bcrypt';
-    //
-    // return bcrypt.compare(plainPassword, passwordHash.value);
-
-    // Placeholder
-    throw new Error('BcryptHashingService.verify not implemented');
+    return bcrypt.compare(plainPassword, passwordHash.value);
   }
 
   /**
@@ -107,20 +95,14 @@ export class BcryptHashingService implements IHashingService {
    * TODO: Implementar verificación
    */
   public needsRehash(passwordHash: PasswordHash): boolean {
-    // TODO: Implementar verificación
-    // bcrypt almacena el número de rounds en el hash
-    // Formato: $2b$XX$... donde XX es el número de rounds
-    //
-    // const hashValue = passwordHash.value;
-    // const match = hashValue.match(/^\$2[aby]\$(\d+)\$/);
-    // if (!match) {
-    //   return true; // Formato inválido, rehash recomendado
-    // }
-    //
-    // const currentRounds = parseInt(match[1], 10);
-    // return currentRounds < this.options.saltRounds;
+    const hashValue = passwordHash.value;
+    const match = hashValue.match(/^\$2[aby]\$(\d+)\$/);
 
-    // Placeholder
-    throw new Error('BcryptHashingService.needsRehash not implemented');
+    if (!match || !match[1]) {
+      return true; // Invalid format, rehash recommended
+    }
+
+    const currentRounds = parseInt(match[1], 10);
+    return currentRounds < this.options.saltRounds;
   }
 }

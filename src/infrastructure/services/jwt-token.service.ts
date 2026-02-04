@@ -21,6 +21,9 @@
  * - crypto (built-in Node.js)
  */
 
+import * as jwt from 'jsonwebtoken';
+import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import { createHash } from 'crypto';
 import {
   ITokenService,
   AccessTokenPayload,
@@ -71,30 +74,26 @@ export class JwtTokenService implements ITokenService {
   public async generateAccessToken(
     payload: AccessTokenPayload
   ): Promise<AccessToken> {
-    // TODO: Implementar generación de JWT
-    // const now = this.dateTimeService.now();
-    // const expiresAt = this.dateTimeService.addSeconds(
-    //   this.config.accessToken.expirationSeconds
-    // );
-    //
-    // const tokenPayload = {
-    //   sub: payload.userId,
-    //   email: payload.email,
-    //   ...payload.claims,
-    //   iat: Math.floor(now.getTime() / 1000),
-    //   exp: Math.floor(expiresAt.getTime() / 1000),
-    //   iss: this.config.issuer,
-    //   aud: this.config.audience,
-    // };
-    //
-    // const token = jwt.sign(tokenPayload, this.config.accessToken.secret, {
-    //   algorithm: this.config.accessToken.algorithm,
-    // });
-    //
-    // return AccessToken.create(token, payload.userId, now, expiresAt);
+    const now = this.dateTimeService.now();
+    const expiresAt = this.dateTimeService.addSeconds(
+      this.config.accessToken.expirationSeconds
+    );
 
-    // Placeholder
-    throw new Error('JwtTokenService.generateAccessToken not implemented');
+    const tokenPayload = {
+      sub: payload.userId,
+      email: payload.email,
+      ...payload.claims,
+      iat: Math.floor(now.getTime() / 1000),
+      exp: Math.floor(expiresAt.getTime() / 1000),
+      iss: this.config.issuer,
+      aud: this.config.audience,
+    };
+
+    const token = jwt.sign(tokenPayload, this.config.accessToken.secret, {
+      algorithm: this.config.accessToken.algorithm,
+    });
+
+    return AccessToken.create(token, payload.userId, now, expiresAt);
   }
 
   /**
@@ -108,11 +107,32 @@ export class JwtTokenService implements ITokenService {
   public async generateRefreshToken(
     payload: RefreshTokenPayload
   ): Promise<RefreshToken> {
-    // TODO: Implementar generación de refresh token
-    // Puede ser JWT o un token opaco aleatorio
+    const now = this.dateTimeService.now();
+    const expiresAt = this.dateTimeService.addSeconds(
+      this.config.refreshToken.expirationSeconds
+    );
 
-    // Placeholder
-    throw new Error('JwtTokenService.generateRefreshToken not implemented');
+    const tokenPayload = {
+      sub: payload.userId,
+      jti: payload.tokenId,
+      iat: Math.floor(now.getTime() / 1000),
+      exp: Math.floor(expiresAt.getTime() / 1000),
+    };
+
+    const token = jwt.sign(tokenPayload, this.config.refreshToken.secret, {
+      algorithm: this.config.refreshToken.algorithm,
+    });
+
+    // Use fromPersistence to support both initial and rotated tokens
+    return RefreshToken.fromPersistence(token, {
+      tokenId: payload.tokenId,
+      userId: payload.userId,
+      issuedAt: now,
+      expiresAt,
+      parentTokenId: payload.parentTokenId ?? null,
+      status: RefreshTokenStatus.ACTIVE,
+      deviceInfo: payload.deviceInfo,
+    });
   }
 
   /**
@@ -126,33 +146,33 @@ export class JwtTokenService implements ITokenService {
   public async validateAccessToken(
     token: string
   ): Promise<AccessTokenValidationResult> {
-    // TODO: Implementar validación
-    // try {
-    //   const decoded = jwt.verify(token, this.config.accessToken.secret, {
-    //     algorithms: [this.config.accessToken.algorithm],
-    //     issuer: this.config.issuer,
-    //     audience: this.config.audience,
-    //   });
-    //
-    //   return {
-    //     isValid: true,
-    //     payload: {
-    //       userId: decoded.sub,
-    //       email: decoded.email,
-    //     },
-    //   };
-    // } catch (error) {
-    //   if (error instanceof jwt.TokenExpiredError) {
-    //     return { isValid: false, error: 'expired' };
-    //   }
-    //   if (error instanceof jwt.JsonWebTokenError) {
-    //     return { isValid: false, error: 'invalid_signature' };
-    //   }
-    //   return { isValid: false, error: 'unknown' };
-    // }
+    try {
+      const decoded = jwt.verify(token, this.config.accessToken.secret, {
+        algorithms: [this.config.accessToken.algorithm],
+        issuer: this.config.issuer,
+        audience: this.config.audience,
+      }) as Record<string, unknown>;
 
-    // Placeholder
-    throw new Error('JwtTokenService.validateAccessToken not implemented');
+      return {
+        isValid: true,
+        payload: {
+          userId: decoded.sub as string,
+          email: decoded.email as string,
+        },
+      };
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        return { isValid: false, error: 'expired' };
+      }
+      if (error instanceof JsonWebTokenError) {
+        // JsonWebTokenError covers malformed and invalid signature
+        if ((error.message || '').includes('malformed')) {
+          return { isValid: false, error: 'malformed' };
+        }
+        return { isValid: false, error: 'invalid_signature' };
+      }
+      return { isValid: false, error: 'unknown' };
+    }
   }
 
   /**
@@ -166,10 +186,30 @@ export class JwtTokenService implements ITokenService {
   public async validateRefreshToken(
     token: string
   ): Promise<RefreshTokenValidationResult> {
-    // TODO: Implementar validación
+    try {
+      const decoded = jwt.verify(token, this.config.refreshToken.secret, {
+        algorithms: [this.config.refreshToken.algorithm],
+      }) as Record<string, unknown>;
 
-    // Placeholder
-    throw new Error('JwtTokenService.validateRefreshToken not implemented');
+      return {
+        isValid: true,
+        payload: {
+          userId: decoded.sub as string,
+          tokenId: decoded.jti as string,
+        },
+      };
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        return { isValid: false, error: 'expired' };
+      }
+      if (error instanceof JsonWebTokenError) {
+        if ((error.message || '').includes('malformed')) {
+          return { isValid: false, error: 'malformed' };
+        }
+        return { isValid: false, error: 'invalid_signature' };
+      }
+      return { isValid: false, error: 'unknown' };
+    }
   }
 
   /**
@@ -181,22 +221,21 @@ export class JwtTokenService implements ITokenService {
    * TODO: Implementar decodificación
    */
   public decodeAccessToken(token: string): AccessTokenPayload | null {
-    // TODO: Implementar decodificación
-    // try {
-    //   const decoded = jwt.decode(token);
-    //   if (!decoded || typeof decoded === 'string') {
-    //     return null;
-    //   }
-    //   return {
-    //     userId: decoded.sub,
-    //     email: decoded.email,
-    //   };
-    // } catch {
-    //   return null;
-    // }
-
-    // Placeholder
-    throw new Error('JwtTokenService.decodeAccessToken not implemented');
+    try {
+      if (!token) {
+        return null;
+      }
+      const decoded = jwt.decode(token);
+      if (!decoded || typeof decoded === 'string') {
+        return null;
+      }
+      return {
+        userId: decoded.sub as string,
+        email: decoded.email as string,
+      };
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -208,11 +247,6 @@ export class JwtTokenService implements ITokenService {
    * TODO: Implementar hashing con crypto
    */
   public async hashRefreshToken(tokenValue: string): Promise<string> {
-    // TODO: Implementar hashing
-    // import crypto from 'crypto';
-    // return crypto.createHash('sha256').update(tokenValue).digest('hex');
-
-    // Placeholder
-    throw new Error('JwtTokenService.hashRefreshToken not implemented');
+    return createHash('sha256').update(tokenValue).digest('hex');
   }
 }
