@@ -7,6 +7,7 @@
  * SOLO para tests - NO usar en producción.
  */
 
+import { createHash } from 'crypto';
 import { RefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface.js';
 import {
   RefreshToken,
@@ -43,8 +44,8 @@ export class InMemoryRefreshTokenRepository implements RefreshTokenRepository {
    * Guarda un nuevo refresh token.
    */
   public async save(token: RefreshToken): Promise<void> {
-    // Simular hash (en tests reales, usar el mismo algoritmo)
-    const hash = `hash_${token.value}`;
+    // Usar el mismo algoritmo SHA256 que JwtTokenService.hashRefreshToken()
+    const hash = createHash('sha256').update(token.value).digest('hex');
 
     this.tokens.set(token.tokenId, { token, tokenHash: hash });
     this.hashIndex.set(hash, token.tokenId);
@@ -244,9 +245,9 @@ export class InMemoryRefreshTokenRepository implements RefreshTokenRepository {
   }
 
   /**
-   * Simula el hash de un token (para tests).
+   * Calcula el hash de un token (para tests).
    */
-  public simulateHash(tokenValue: string): string {
-    return `hash_${tokenValue}`;
+  public computeHash(tokenValue: string): string {
+    return createHash('sha256').update(tokenValue).digest('hex');
   }
 }

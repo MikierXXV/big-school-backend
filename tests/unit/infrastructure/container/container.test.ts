@@ -16,6 +16,7 @@ import { ITokenService } from '../../../../src/application/ports/token.service.p
 import { RegisterUserUseCase } from '../../../../src/application/use-cases/auth/register-user.use-case.js';
 import { LoginUserUseCase } from '../../../../src/application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../../../src/application/use-cases/auth/refresh-session.use-case.js';
+import { VerifyEmailUseCase } from '../../../../src/application/use-cases/auth/verify-email.use-case.js';
 
 describe('DI Container', () => {
   const originalEnv = process.env;
@@ -47,6 +48,7 @@ describe('DI Container', () => {
       expect(container.registerUserUseCase).toBeDefined();
       expect(container.loginUserUseCase).toBeDefined();
       expect(container.refreshSessionUseCase).toBeDefined();
+      expect(container.verifyEmailUseCase).toBeDefined();
     });
 
     it('should create logger that implements ILogger', () => {
@@ -131,6 +133,13 @@ describe('DI Container', () => {
 
       expect(container.refreshSessionUseCase).toBeInstanceOf(RefreshSessionUseCase);
       expect(typeof container.refreshSessionUseCase.execute).toBe('function');
+    });
+
+    it('should create VerifyEmailUseCase instance', () => {
+      const container = createContainer();
+
+      expect(container.verifyEmailUseCase).toBeInstanceOf(VerifyEmailUseCase);
+      expect(typeof container.verifyEmailUseCase.execute).toBe('function');
     });
 
     it('should include server and JWT config', () => {

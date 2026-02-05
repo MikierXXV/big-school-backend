@@ -4,12 +4,13 @@
  * ============================================
  *
  * Controlador para endpoints de autenticación.
- * Maneja registro, login y refresh de sesión.
+ * Maneja registro, login, verificación de email y refresh de sesión.
  *
  * ENDPOINTS:
  * - POST /auth/register - Registro de usuario
  * - POST /auth/login - Login
  * - POST /auth/refresh - Refresh token
+ * - POST /auth/verify-email - Verificación de email
  * - POST /auth/logout - Logout (futuro)
  *
  * RESPONSABILIDADES:
@@ -23,6 +24,7 @@
 import { RegisterUserUseCase } from '../../../application/use-cases/auth/register-user.use-case.js';
 import { LoginUserUseCase } from '../../../application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../../application/use-cases/auth/refresh-session.use-case.js';
+import { VerifyEmailUseCase } from '../../../application/use-cases/auth/verify-email.use-case.js';
 import {
   RegisterUserRequestDto,
   RegisterUserResponseDto,
@@ -35,6 +37,10 @@ import {
   RefreshSessionRequestDto,
   RefreshSessionResponseDto,
 } from '../../../application/dtos/auth/refresh-session.dto.js';
+import {
+  VerifyEmailRequestDto,
+  VerifyEmailResponseDto,
+} from '../../../application/dtos/auth/verify-email.dto.js';
 
 /**
  * Request HTTP genérico (independiente del framework).
@@ -73,6 +79,7 @@ export interface AuthControllerDependencies {
   readonly registerUserUseCase: RegisterUserUseCase;
   readonly loginUserUseCase: LoginUserUseCase;
   readonly refreshSessionUseCase: RefreshSessionUseCase;
+  readonly verifyEmailUseCase: VerifyEmailUseCase;
 }
 
 /**
@@ -168,6 +175,33 @@ export class AuthController {
 
     // Execute use case (errors propagate to error handler)
     const result = await this.deps.refreshSessionUseCase.execute(dto);
+
+    // Return successful response
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja POST /auth/verify-email
+   *
+   * @param request - Request HTTP con token de verificación
+   * @returns Response HTTP con resultado
+   *
+   * Los errores se propagan al error handler middleware.
+   */
+  public async verifyEmail(
+    request: HttpRequest<VerifyEmailRequestDto>
+  ): Promise<HttpResponse<VerifyEmailResponseDto>> {
+    // Extract DTO from body
+    const dto = request.body;
+
+    // Execute use case (errors propagate to error handler)
+    const result = await this.deps.verifyEmailUseCase.execute(dto);
 
     // Return successful response
     return {

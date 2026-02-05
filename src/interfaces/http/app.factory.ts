@@ -23,10 +23,12 @@ import {
   validateRegisterRequest,
   validateLoginRequest,
   validateRefreshRequest,
+  validateVerifyEmailRequest,
 } from './validators/auth.validators.js';
 import { RegisterUserUseCase } from '../../application/use-cases/auth/register-user.use-case.js';
 import { LoginUserUseCase } from '../../application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../application/use-cases/auth/refresh-session.use-case.js';
+import { VerifyEmailUseCase } from '../../application/use-cases/auth/verify-email.use-case.js';
 import { ILogger } from '../../application/ports/logger.port.js';
 import { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 import { ITokenService } from '../../application/ports/token.service.port.js';
@@ -41,6 +43,7 @@ export interface AppDependencies {
   registerUserUseCase: RegisterUserUseCase;
   loginUserUseCase: LoginUserUseCase;
   refreshSessionUseCase: RefreshSessionUseCase;
+  verifyEmailUseCase: VerifyEmailUseCase;
   isProduction?: boolean;
   version?: string;
 }
@@ -78,6 +81,7 @@ export function createApp(deps: AppDependencies): Express {
     registerUserUseCase: deps.registerUserUseCase,
     loginUserUseCase: deps.loginUserUseCase,
     refreshSessionUseCase: deps.refreshSessionUseCase,
+    verifyEmailUseCase: deps.verifyEmailUseCase,
   });
   const healthController = new HealthController(deps.version);
 
@@ -130,6 +134,12 @@ export function createApp(deps: AppDependencies): Express {
     '/auth/refresh',
     createValidationMiddleware(validateRefreshRequest),
     adaptRoute(authController, 'refresh')
+  );
+
+  app.post(
+    '/auth/verify-email',
+    createValidationMiddleware(validateVerifyEmailRequest),
+    adaptRoute(authController, 'verifyEmail')
   );
 
   app.post(

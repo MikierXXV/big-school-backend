@@ -11,14 +11,16 @@
  * 3. Hashear la contraseña
  * 4. Crear entidad User
  * 5. Persistir usuario
- * 6. Emitir evento UserRegistered
- * 7. (Opcional) Enviar email de verificación
+ * 6. Generar token de verificación
+ * 7. Emitir evento UserRegistered
+ * 8. (Opcional) Enviar email de verificación
  *
  * DEPENDENCIAS (inyectadas):
  * - UserRepository: Persistencia de usuarios
  * - HashingService: Hashing de contraseñas
  * - UuidGenerator: Generación de IDs
  * - DateTimeService: Fecha/hora actual
+ * - TokenService: Generación de tokens de verificación
  * - Logger: Logging
  */
 
@@ -31,6 +33,7 @@ import { WeakPasswordError } from '../../../domain/errors/authentication.errors.
 import { IHashingService } from '../../ports/hashing.service.port.js';
 import { IUuidGenerator } from '../../ports/uuid-generator.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
+import { ITokenService } from '../../ports/token.service.port.js';
 import { ILogger } from '../../ports/logger.port.js';
 import {
   RegisterUserRequestDto,
@@ -50,7 +53,10 @@ export interface RegisterUserDependencies {
   readonly hashingService: IHashingService;
   readonly uuidGenerator: IUuidGenerator;
   readonly dateTimeService: IDateTimeService;
+  readonly tokenService: ITokenService;
   readonly logger: ILogger;
+  /** Indica si estamos en producción (no incluir token en respuesta) */
+  readonly isProduction?: boolean;
 }
 
 /**
@@ -131,11 +137,20 @@ export class RegisterUserUseCase {
     // 10. Persistir usuario
     await this.deps.userRepository.save(user);
 
-    // 11. Log éxito
+    // 11. Generar token de verificación
+    const verificationToken = await this.deps.tokenService.generateAccessToken({
+      userId: user.id.value,
+      email: user.email.value,
+      claims: { purpose: 'email_verification' },
+    });
+
+    // 12. Log éxito
     this.deps.logger.info('User registered successfully', { userId: userId.value });
 
-    // 12. Retornar DTO de respuesta
-    return {
+    // 13. Retornar DTO de respuesta
+    // En desarrollo, incluimos el token para facilitar testing
+    // En producción, el token se enviaría por email
+    const response: RegisterUserResponseDto = {
       success: true,
       message: 'User registered successfully. Please verify your email.',
       user: {
@@ -145,8 +160,12 @@ export class RegisterUserUseCase {
         status: user.status,
         createdAt: user.createdAt.toISOString(),
         requiresEmailVerification: true,
+        // Solo incluir token en desarrollo
+        ...(this.deps.isProduction ? {} : { verificationToken: verificationToken.value }),
       },
     };
+
+    return response;
   }
 
   /**

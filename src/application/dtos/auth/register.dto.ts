@@ -109,4 +109,11 @@ export interface RegisteredUserDto {
    * ¿Requiere verificación de email?
    */
   readonly requiresEmailVerification: boolean;
+
+  /**
+   * Token de verificación de email.
+   * Solo se incluye en entorno de desarrollo para facilitar testing.
+   * En producción, el token se envía por email.
+   */
+  readonly verificationToken?: string;
 }
