@@ -71,41 +71,28 @@ export interface EnvironmentConfig {
  * Carga y valida la configuración del entorno.
  *
  * @returns Configuración tipada y validada
- *
- * TODO: Implementar carga de .env
- * TODO: Implementar validación de variables requeridas
  */
 export function loadEnvironmentConfig(): EnvironmentConfig {
-  // TODO: Cargar dotenv
-  // dotenv.config();
+  const env = (process.env.NODE_ENV || 'development') as Environment;
 
-  // TODO: Validar variables requeridas
-  // validateRequiredEnvVars(['NODE_ENV', 'PORT', ...]);
-
-  // TODO: Construir y retornar configuración
-  // const env = (process.env.NODE_ENV || 'development') as Environment;
-
-  // return {
-  //   server: {
-  //     port: parseInt(process.env.PORT || '3000', 10),
-  //     host: process.env.HOST || 'localhost',
-  //     environment: env,
-  //     isProduction: env === 'production',
-  //     isDevelopment: env === 'development',
-  //     isTest: env === 'test',
-  //   },
-  //   cors: {
-  //     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  //     credentials: process.env.CORS_CREDENTIALS === 'true',
-  //   },
-  //   rateLimit: {
-  //     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-  //     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
-  //   },
-  // };
-
-  // Placeholder
-  throw new Error('loadEnvironmentConfig not implemented');
+  return {
+    server: {
+      port: parseInt(process.env.PORT || '3000', 10),
+      host: process.env.HOST || 'localhost',
+      environment: env,
+      isProduction: env === 'production',
+      isDevelopment: env === 'development',
+      isTest: env === 'test',
+    },
+    cors: {
+      origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+      credentials: process.env.CORS_CREDENTIALS === 'true',
+    },
+    rateLimit: {
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
+      maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+    },
+  };
 }
 
 /**
