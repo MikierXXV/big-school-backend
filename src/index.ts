@@ -16,131 +16,99 @@
  * ARQUITECTURA:
  * Este archivo es parte de la capa de Infraestructura/Composición.
  * Aquí se "ensamblan" todas las piezas de la aplicación.
- *
- * TODO: Implementar composición de la aplicación
  */
 
-// ============================================
-// IMPORTS (comentados hasta implementar)
-// ============================================
+import dotenv from 'dotenv';
+import { Server } from 'http';
+import { createContainer } from './infrastructure/container/container.js';
+import { createApp } from './interfaces/http/app.factory.js';
 
-// Configuración
-// import dotenv from 'dotenv';
-// import { loadEnvironmentConfig } from './infrastructure/config/environment.config.js';
-// import { loadDatabaseConfig } from './infrastructure/config/database.config.js';
-// import { loadJwtConfig } from './infrastructure/config/jwt.config.js';
+// Load environment variables from .env file
+dotenv.config();
 
-// Infraestructura
-// import { PostgresUserRepository } from './infrastructure/persistence/postgresql/postgres-user.repository.js';
-// import { PostgresRefreshTokenRepository } from './infrastructure/persistence/postgresql/postgres-refresh-token.repository.js';
-// import { JwtTokenService } from './infrastructure/services/jwt-token.service.js';
-// import { BcryptHashingService } from './infrastructure/services/bcrypt-hashing.service.js';
-// import { SystemDateTimeService } from './infrastructure/services/system-datetime.service.js';
-// import { CryptoUuidGenerator } from './infrastructure/services/crypto-uuid-generator.service.js';
-// import { ConsoleLogger } from './infrastructure/logging/console-logger.service.js';
-
-// Casos de uso
-// import { RegisterUserUseCase } from './application/use-cases/auth/register-user.use-case.js';
-// import { LoginUserUseCase } from './application/use-cases/auth/login-user.use-case.js';
-// import { RefreshSessionUseCase } from './application/use-cases/auth/refresh-session.use-case.js';
-
-// Controladores
-// import { AuthController } from './interfaces/http/controllers/auth.controller.js';
-// import { HealthController } from './interfaces/http/controllers/health.controller.js';
+/**
+ * Server instance for graceful shutdown
+ */
+let server: Server | null = null;
 
 /**
  * Función principal de inicio de la aplicación.
- *
- * TODO: Implementar inicialización completa
  */
 async function main(): Promise<void> {
-  console.log('='.repeat(50));
-  console.log('BIG SCHOOL BACKEND');
-  console.log('Clean Architecture + DDD + Hexagonal');
-  console.log('='.repeat(50));
-  console.log('');
+  // ============================================
+  // 1. CREATE DI CONTAINER
+  // ============================================
+  const container = createContainer();
+  const { logger, config } = container;
 
-  // TODO: Implementar los siguientes pasos:
+  logger.info('Starting BIG SCHOOL Backend...');
+  logger.info('Clean Architecture + DDD + Hexagonal', {
+    environment: config.server.environment,
+    port: config.server.port,
+  });
 
-  // 1. Cargar variables de entorno
-  // dotenv.config();
-  // const envConfig = loadEnvironmentConfig();
-  // const dbConfig = loadDatabaseConfig();
-  // const jwtConfig = loadJwtConfig();
+  // ============================================
+  // 2. CREATE EXPRESS APPLICATION
+  // ============================================
+  const app = createApp({
+    logger,
+    uuidGenerator: container.uuidGenerator,
+    tokenService: container.tokenService,
+    registerUserUseCase: container.registerUserUseCase,
+    loginUserUseCase: container.loginUserUseCase,
+    refreshSessionUseCase: container.refreshSessionUseCase,
+    isProduction: config.server.isProduction,
+    version: process.env.npm_package_version || '1.0.0',
+  });
 
-  // 2. Crear logger
-  // const logger = new ConsoleLogger({ module: 'main' });
-  // logger.info('Starting application...');
+  // ============================================
+  // 3. START HTTP SERVER
+  // ============================================
+  const { port, host } = config.server;
 
-  // 3. Crear servicios de infraestructura
-  // const dateTimeService = new SystemDateTimeService();
-  // const uuidGenerator = new CryptoUuidGenerator();
-  // const hashingService = new BcryptHashingService();
-  // const tokenService = new JwtTokenService(jwtConfig, dateTimeService);
+  server = app.listen(port, host, () => {
+    logger.info(`Server running at http://${host}:${port}`, {
+      port,
+      host,
+      nodeEnv: config.server.environment,
+    });
+    logger.info('Available endpoints:', {
+      health: `http://${host}:${port}/health`,
+      register: `http://${host}:${port}/auth/register`,
+      login: `http://${host}:${port}/auth/login`,
+      refresh: `http://${host}:${port}/auth/refresh`,
+      logout: `http://${host}:${port}/auth/logout`,
+    });
+  });
 
-  // 4. Conectar a base de datos
-  // const dbConnection = await createDatabaseConnection(dbConfig);
-  // logger.info('Database connected');
+  // ============================================
+  // 4. GRACEFUL SHUTDOWN HANDLERS
+  // ============================================
+  const shutdown = (signal: string) => {
+    logger.info(`Received ${signal}, shutting down gracefully...`);
 
-  // 5. Crear repositorios
-  // const userRepository = new PostgresUserRepository(dbConnection);
-  // const refreshTokenRepository = new PostgresRefreshTokenRepository(dbConnection);
+    if (server) {
+      server.close((err) => {
+        if (err) {
+          logger.error('Error during server shutdown', err);
+          process.exit(1);
+        }
+        logger.info('Server closed successfully');
+        process.exit(0);
+      });
 
-  // 6. Crear casos de uso (inyección de dependencias)
-  // const registerUserUseCase = new RegisterUserUseCase({
-  //   userRepository,
-  //   hashingService,
-  //   uuidGenerator,
-  //   dateTimeService,
-  //   logger: logger.child({ useCase: 'RegisterUser' }),
-  // });
-  //
-  // const loginUserUseCase = new LoginUserUseCase({
-  //   userRepository,
-  //   refreshTokenRepository,
-  //   tokenService,
-  //   hashingService,
-  //   uuidGenerator,
-  //   dateTimeService,
-  //   logger: logger.child({ useCase: 'LoginUser' }),
-  // });
-  //
-  // const refreshSessionUseCase = new RefreshSessionUseCase({
-  //   userRepository,
-  //   refreshTokenRepository,
-  //   tokenService,
-  //   uuidGenerator,
-  //   dateTimeService,
-  //   logger: logger.child({ useCase: 'RefreshSession' }),
-  // });
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        logger.warn('Forcing shutdown after timeout');
+        process.exit(1);
+      }, 10000);
+    } else {
+      process.exit(0);
+    }
+  };
 
-  // 7. Crear controladores
-  // const authController = new AuthController({
-  //   registerUserUseCase,
-  //   loginUserUseCase,
-  //   refreshSessionUseCase,
-  // });
-  // const healthController = new HealthController();
-
-  // 8. Configurar servidor HTTP (Express, Fastify, etc.)
-  // const app = createHttpServer();
-  // configureMiddlewares(app);
-  // configureRoutes(app, authController, healthController);
-  // configureErrorHandler(app, logger);
-
-  // 9. Iniciar servidor
-  // const port = envConfig.server.port;
-  // app.listen(port, () => {
-  //   logger.info(`Server running on port ${port}`);
-  // });
-
-  console.log('TODO: Implementar inicialización de la aplicación');
-  console.log('');
-  console.log('La estructura está lista. Próximos pasos:');
-  console.log('1. npm install');
-  console.log('2. Implementar servicios de infraestructura');
-  console.log('3. Configurar servidor HTTP');
-  console.log('4. Ejecutar tests: npm test');
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 // Ejecutar aplicación

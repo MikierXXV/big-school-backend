@@ -22,7 +22,9 @@
  */
 
 import * as jwt from 'jsonwebtoken';
-import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+
+// Access error classes from the jwt namespace for ESM compatibility
+const { JsonWebTokenError, TokenExpiredError } = jwt;
 import { createHash } from 'crypto';
 import {
   ITokenService,
