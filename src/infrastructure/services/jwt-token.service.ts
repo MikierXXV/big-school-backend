@@ -21,9 +21,9 @@
  * - crypto (built-in Node.js)
  */
 
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-// Access error classes from the jwt namespace for ESM compatibility
+// Extract error classes from the default export (CommonJS compatibility)
 const { JsonWebTokenError, TokenExpiredError } = jwt;
 import { createHash } from 'crypto';
 import {

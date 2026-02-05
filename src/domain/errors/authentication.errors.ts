@@ -171,3 +171,45 @@ export class WeakPasswordError extends DomainError {
     );
   }
 }
+
+/**
+ * Error: Token de verificación inválido.
+ * Se lanza cuando el token de verificación de email no es válido.
+ */
+export class InvalidVerificationTokenError extends DomainError {
+  public readonly code = 'DOMAIN_INVALID_VERIFICATION_TOKEN';
+
+  constructor(reason?: string) {
+    super(
+      `Invalid verification token${reason ? `: ${reason}` : ''}`,
+      { reason }
+    );
+  }
+}
+
+/**
+ * Error: Token de verificación expirado.
+ * Se lanza cuando el token de verificación ha expirado.
+ */
+export class VerificationTokenExpiredError extends DomainError {
+  public readonly code = 'DOMAIN_VERIFICATION_TOKEN_EXPIRED';
+
+  constructor() {
+    super('Verification token has expired');
+  }
+}
+
+/**
+ * Error: Email ya verificado.
+ * Se lanza cuando se intenta verificar un email que ya fue verificado.
+ */
+export class EmailAlreadyVerifiedError extends DomainError {
+  public readonly code = 'DOMAIN_EMAIL_ALREADY_VERIFIED';
+
+  constructor(email: string) {
+    super(
+      `Email ${email} has already been verified`,
+      { email }
+    );
+  }
+}

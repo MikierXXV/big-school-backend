@@ -24,7 +24,9 @@ import { UserRepository } from '../../../../src/domain/repositories/user.reposit
 import { IHashingService } from '../../../../src/application/ports/hashing.service.port.js';
 import { IUuidGenerator } from '../../../../src/application/ports/uuid-generator.port.js';
 import { IDateTimeService } from '../../../../src/application/ports/datetime.service.port.js';
+import { ITokenService } from '../../../../src/application/ports/token.service.port.js';
 import { ILogger } from '../../../../src/application/ports/logger.port.js';
+import { AccessToken } from '../../../../src/domain/value-objects/access-token.value-object.js';
 import { PasswordHash } from '../../../../src/domain/value-objects/password-hash.value-object.js';
 import { User, UserStatus } from '../../../../src/domain/entities/user.entity.js';
 import { UserAlreadyExistsError } from '../../../../src/domain/errors/user.errors.js';
@@ -40,6 +42,7 @@ describe('RegisterUser Use Case', () => {
   let mockHashingService: IHashingService;
   let mockUuidGenerator: IUuidGenerator;
   let mockDateTimeService: IDateTimeService;
+  let mockTokenService: ITokenService;
   let mockLogger: ILogger;
 
   // Use case instance
@@ -98,6 +101,22 @@ describe('RegisterUser Use Case', () => {
       fromISOString: vi.fn().mockImplementation((s) => new Date(s)),
     };
 
+    mockTokenService = {
+      generateAccessToken: vi.fn().mockResolvedValue(
+        AccessToken.create(
+          'mock.verification.token',
+          VALID_UUID,
+          FIXED_DATE,
+          new Date(FIXED_DATE.getTime() + 18000000)
+        )
+      ),
+      generateRefreshToken: vi.fn(),
+      validateAccessToken: vi.fn(),
+      validateRefreshToken: vi.fn(),
+      decodeAccessToken: vi.fn(),
+      hashRefreshToken: vi.fn(),
+    };
+
     mockLogger = {
       debug: vi.fn(),
       info: vi.fn(),
@@ -112,6 +131,7 @@ describe('RegisterUser Use Case', () => {
       hashingService: mockHashingService,
       uuidGenerator: mockUuidGenerator,
       dateTimeService: mockDateTimeService,
+      tokenService: mockTokenService,
       logger: mockLogger,
     };
 

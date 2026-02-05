@@ -19,6 +19,7 @@ import { ValidationFieldError } from '../../../application/errors/validation.err
 import { RegisterUserRequestDto } from '../../../application/dtos/auth/register.dto.js';
 import { LoginUserRequestDto } from '../../../application/dtos/auth/login.dto.js';
 import { RefreshSessionRequestDto } from '../../../application/dtos/auth/refresh-session.dto.js';
+import { VerifyEmailRequestDto } from '../../../application/dtos/auth/verify-email.dto.js';
 
 /**
  * Resultado de validación.
@@ -184,6 +185,39 @@ export function validateRefreshRequest(body: unknown): ValidationResult {
     errors.push({ field: 'refreshToken', message: 'Refresh token must be a string' });
   } else if (data.refreshToken.trim().length === 0) {
     errors.push({ field: 'refreshToken', message: 'Refresh token cannot be empty' });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Valida request de verificación de email.
+ *
+ * @param body - Body del request
+ * @returns Resultado de validación
+ */
+export function validateVerifyEmailRequest(body: unknown): ValidationResult {
+  const errors: ValidationFieldError[] = [];
+
+  if (!body || typeof body !== 'object') {
+    return {
+      isValid: false,
+      errors: [{ field: 'body', message: 'Request body is required' }],
+    };
+  }
+
+  const data = body as Partial<VerifyEmailRequestDto>;
+
+  // Token
+  if (!data.token) {
+    errors.push({ field: 'token', message: 'Verification token is required' });
+  } else if (typeof data.token !== 'string') {
+    errors.push({ field: 'token', message: 'Verification token must be a string' });
+  } else if (data.token.trim().length === 0) {
+    errors.push({ field: 'token', message: 'Verification token cannot be empty' });
   }
 
   return {

@@ -57,6 +57,7 @@ async function main(): Promise<void> {
     registerUserUseCase: container.registerUserUseCase,
     loginUserUseCase: container.loginUserUseCase,
     refreshSessionUseCase: container.refreshSessionUseCase,
+    verifyEmailUseCase: container.verifyEmailUseCase,
     isProduction: config.server.isProduction,
     version: process.env.npm_package_version || '1.0.0',
   });
@@ -77,6 +78,7 @@ async function main(): Promise<void> {
       register: `http://${host}:${port}/auth/register`,
       login: `http://${host}:${port}/auth/login`,
       refresh: `http://${host}:${port}/auth/refresh`,
+      verifyEmail: `http://${host}:${port}/auth/verify-email`,
       logout: `http://${host}:${port}/auth/logout`,
     });
   });

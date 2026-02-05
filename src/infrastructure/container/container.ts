@@ -24,6 +24,7 @@ import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.
 import { RegisterUserUseCase } from '../../application/use-cases/auth/register-user.use-case.js';
 import { LoginUserUseCase } from '../../application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../application/use-cases/auth/refresh-session.use-case.js';
+import { VerifyEmailUseCase } from '../../application/use-cases/auth/verify-email.use-case.js';
 
 import { ConsoleLogger } from '../logging/console-logger.service.js';
 import { SystemDateTimeService } from '../services/system-datetime.service.js';
@@ -64,6 +65,7 @@ export interface AppContainer {
   readonly registerUserUseCase: RegisterUserUseCase;
   readonly loginUserUseCase: LoginUserUseCase;
   readonly refreshSessionUseCase: RefreshSessionUseCase;
+  readonly verifyEmailUseCase: VerifyEmailUseCase;
 
   // Config
   readonly config: ContainerConfig;
@@ -110,7 +112,9 @@ export function createContainer(): AppContainer {
     hashingService,
     uuidGenerator,
     dateTimeService,
+    tokenService,
     logger: logger.child({ useCase: 'RegisterUser' }),
+    isProduction: envConfig.server.isProduction,
   });
 
   const loginUserUseCase = new LoginUserUseCase({
@@ -132,6 +136,13 @@ export function createContainer(): AppContainer {
     logger: logger.child({ useCase: 'RefreshSession' }),
   });
 
+  const verifyEmailUseCase = new VerifyEmailUseCase({
+    userRepository,
+    tokenService,
+    dateTimeService,
+    logger: logger.child({ useCase: 'VerifyEmail' }),
+  });
+
   // ============================================
   // 5. RETURN CONTAINER
   // ============================================
@@ -151,6 +162,7 @@ export function createContainer(): AppContainer {
     registerUserUseCase,
     loginUserUseCase,
     refreshSessionUseCase,
+    verifyEmailUseCase,
 
     // Config
     config: {
