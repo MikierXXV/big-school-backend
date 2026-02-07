@@ -57,7 +57,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar INSERT
    */
-  public async save(token: RefreshToken): Promise<void> {
+  public async save(_token: RefreshToken): Promise<void> {
     // TODO: Implementar
 
     // Placeholder
@@ -73,8 +73,8 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    * TODO: Implementar UPDATE
    */
   public async updateStatus(
-    tokenId: string,
-    status: RefreshTokenStatus
+    _tokenId: string,
+    _status: RefreshTokenStatus
   ): Promise<void> {
     // TODO: Implementar
 
@@ -89,7 +89,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar UPDATE status = REVOKED
    */
-  public async revoke(tokenId: string): Promise<void> {
+  public async revoke(_tokenId: string): Promise<void> {
     // TODO: Implementar
 
     // Placeholder
@@ -104,7 +104,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar UPDATE WHERE user_id = ?
    */
-  public async revokeAllByUser(userId: UserId): Promise<number> {
+  public async revokeAllByUser(_userId: UserId): Promise<number> {
     // TODO: Implementar
 
     // Placeholder
@@ -119,7 +119,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar con CTE recursivo
    */
-  public async revokeFamily(familyRootTokenId: string): Promise<number> {
+  public async revokeFamily(_familyRootTokenId: string): Promise<number> {
     // TODO: Implementar con CTE recursivo
     // WITH RECURSIVE family AS (
     //   SELECT id FROM refresh_tokens WHERE id = $1
@@ -142,7 +142,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar DELETE
    */
-  public async deleteExpired(olderThan: Date): Promise<number> {
+  public async deleteExpired(_olderThan: Date): Promise<number> {
     // TODO: Implementar
 
     // Placeholder
@@ -157,7 +157,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar SELECT
    */
-  public async findById(tokenId: string): Promise<RefreshToken | null> {
+  public async findById(_tokenId: string): Promise<RefreshToken | null> {
     // TODO: Implementar
 
     // Placeholder
@@ -172,7 +172,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar SELECT WHERE token_hash = ?
    */
-  public async findByTokenHash(tokenHash: string): Promise<RefreshToken | null> {
+  public async findByTokenHash(_tokenHash: string): Promise<RefreshToken | null> {
     // TODO: Implementar
 
     // Placeholder
@@ -187,7 +187,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar SELECT WHERE user_id = ? AND status = ACTIVE
    */
-  public async findActiveByUser(userId: UserId): Promise<RefreshToken[]> {
+  public async findActiveByUser(_userId: UserId): Promise<RefreshToken[]> {
     // TODO: Implementar
 
     // Placeholder
@@ -202,7 +202,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar SELECT COUNT
    */
-  public async countActiveByUser(userId: UserId): Promise<number> {
+  public async countActiveByUser(_userId: UserId): Promise<number> {
     // TODO: Implementar
 
     // Placeholder
@@ -217,7 +217,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar
    */
-  public async isActiveToken(tokenHash: string): Promise<boolean> {
+  public async isActiveToken(_tokenHash: string): Promise<boolean> {
     // TODO: Implementar
 
     // Placeholder
@@ -232,7 +232,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * TODO: Implementar con CTE recursivo ascendente
    */
-  public async findFamilyRootId(tokenId: string): Promise<string | null> {
+  public async findFamilyRootId(_tokenId: string): Promise<string | null> {
     // TODO: Implementar
 
     // Placeholder
@@ -248,7 +248,7 @@ export class PostgresRefreshTokenRepository implements RefreshTokenRepository {
    *
    * @private
    */
-  private rowToEntity(row: RefreshTokenRow, tokenValue: string): RefreshToken {
+  private _rowToEntity(row: RefreshTokenRow, tokenValue: string): RefreshToken {
     const metadata: RefreshTokenMetadata = {
       tokenId: row.id,
       userId: row.user_id,

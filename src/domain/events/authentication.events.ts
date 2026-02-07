@@ -51,8 +51,8 @@ export class LoginSucceededEvent extends BaseDomainEvent {
     this.payload = {
       userId,
       loginAt: occurredOn.toISOString(),
-      deviceInfo,
-      ipAddress,
+      ...(deviceInfo !== undefined && { deviceInfo }),
+      ...(ipAddress !== undefined && { ipAddress }),
     };
   }
 }
@@ -99,7 +99,7 @@ export class LoginFailedEvent extends BaseDomainEvent {
       attemptedEmail,
       failedAt: occurredOn.toISOString(),
       reason,
-      ipAddress,
+      ...(ipAddress !== undefined && { ipAddress }),
     };
   }
 }
@@ -237,7 +237,7 @@ export class TokenReuseDetectedEvent extends BaseDomainEvent {
       reusedTokenId,
       familyRootTokenId,
       detectedAt: occurredOn.toISOString(),
-      ipAddress,
+      ...(ipAddress !== undefined && { ipAddress }),
     };
   }
 }

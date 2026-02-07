@@ -181,8 +181,8 @@ export class UserSuspendedEvent extends BaseDomainEvent {
     this.payload = {
       userId,
       suspendedAt: occurredOn.toISOString(),
-      reason,
-      suspendedBy,
+      ...(reason !== undefined && { reason }),
+      ...(suspendedBy !== undefined && { suspendedBy }),
     };
   }
 }
@@ -222,7 +222,7 @@ export class UserReactivatedEvent extends BaseDomainEvent {
     this.payload = {
       userId,
       reactivatedAt: occurredOn.toISOString(),
-      reactivatedBy,
+      ...(reactivatedBy !== undefined && { reactivatedBy }),
     };
   }
 }

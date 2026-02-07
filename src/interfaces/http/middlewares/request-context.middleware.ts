@@ -87,7 +87,7 @@ export class RequestContextMiddleware {
       correlationId,
       startTime: Date.now(),
       ip,
-      userAgent,
+      ...(userAgent !== undefined && { userAgent }),
     };
   }
 

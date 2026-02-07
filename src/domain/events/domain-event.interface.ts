@@ -62,7 +62,7 @@ export interface IDomainEvent {
    * Metadatos adicionales del evento.
    * Útil para auditoría, tracing, etc.
    */
-  readonly metadata?: EventMetadata;
+  readonly metadata?: EventMetadata | undefined;
 }
 
 /**
@@ -113,7 +113,7 @@ export abstract class BaseDomainEvent implements IDomainEvent {
   public readonly eventVersion: number;
   public readonly occurredOn: Date;
   public readonly aggregateId: string;
-  public readonly metadata?: EventMetadata;
+  public readonly metadata?: EventMetadata | undefined;
 
   /**
    * Constructor del evento base.

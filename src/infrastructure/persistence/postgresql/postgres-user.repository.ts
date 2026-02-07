@@ -80,7 +80,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * TODO: Implementar INSERT
    */
-  public async save(user: User): Promise<void> {
+  public async save(_user: User): Promise<void> {
     // TODO: Implementar
     // const query = `
     //   INSERT INTO users (
@@ -113,7 +113,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * TODO: Implementar UPDATE
    */
-  public async update(user: User): Promise<void> {
+  public async update(_user: User): Promise<void> {
     // TODO: Implementar
 
     // Placeholder
@@ -127,7 +127,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * TODO: Implementar DELETE (o soft delete)
    */
-  public async delete(userId: UserId): Promise<void> {
+  public async delete(_userId: UserId): Promise<void> {
     // TODO: Implementar
 
     // Placeholder
@@ -142,7 +142,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * TODO: Implementar SELECT
    */
-  public async findById(id: UserId): Promise<User | null> {
+  public async findById(_id: UserId): Promise<User | null> {
     // TODO: Implementar
 
     // Placeholder
@@ -157,7 +157,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * TODO: Implementar SELECT
    */
-  public async findByEmail(email: Email): Promise<User | null> {
+  public async findByEmail(_email: Email): Promise<User | null> {
     // TODO: Implementar
 
     // Placeholder
@@ -172,7 +172,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * TODO: Implementar SELECT COUNT
    */
-  public async existsByEmail(email: Email): Promise<boolean> {
+  public async existsByEmail(_email: Email): Promise<boolean> {
     // TODO: Implementar
 
     // Placeholder
@@ -188,7 +188,7 @@ export class PostgresUserRepository implements UserRepository {
    * TODO: Implementar SELECT con LIMIT/OFFSET
    */
   public async findAll(
-    options: PaginationOptions
+    _options: PaginationOptions
   ): Promise<PaginatedResult<User>> {
     // TODO: Implementar
 
@@ -204,7 +204,7 @@ export class PostgresUserRepository implements UserRepository {
    *
    * @private
    */
-  private rowToEntity(row: UserRow): User {
+  private _rowToEntity(row: UserRow): User {
     const props: UserProps = {
       id: UserId.create(row.id),
       email: Email.create(row.email),

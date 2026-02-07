@@ -40,7 +40,7 @@ export abstract class ApplicationError extends Error {
   /**
    * Contexto adicional.
    */
-  public readonly context?: Record<string, unknown>;
+  public readonly context?: Record<string, unknown> | undefined;
 
   /**
    * Constructor del error de aplicación.

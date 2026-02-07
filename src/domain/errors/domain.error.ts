@@ -41,7 +41,7 @@ export abstract class DomainError extends Error {
    * Contexto adicional del error (para logging).
    * NO exponer a usuarios finales.
    */
-  public readonly context?: Record<string, unknown>;
+  public readonly context?: Record<string, unknown> | undefined;
 
   /**
    * Constructor del error de dominio.

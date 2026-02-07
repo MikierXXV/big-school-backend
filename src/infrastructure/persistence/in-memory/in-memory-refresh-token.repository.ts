@@ -184,12 +184,13 @@ export class InMemoryRefreshTokenRepository implements RefreshTokenRepository {
    * Encuentra el ID del token raíz de una familia.
    */
   public async findFamilyRootId(tokenId: string): Promise<string | null> {
-    let currentToken = this.tokens.get(tokenId)?.token;
-    if (!currentToken) {
+    const initialToken = this.tokens.get(tokenId)?.token;
+    if (!initialToken) {
       return null;
     }
 
     // Subir hasta encontrar el raíz (sin parent)
+    let currentToken = initialToken;
     while (currentToken.parentTokenId) {
       const parent = this.tokens.get(currentToken.parentTokenId)?.token;
       if (!parent) {

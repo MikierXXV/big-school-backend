@@ -164,7 +164,7 @@ export class JwtTokenService implements ITokenService {
           userId: sub as string,
           email: email as string,
           // Include any custom claims (like purpose, tokenId)
-          claims: Object.keys(customClaims).length > 0 ? customClaims : undefined,
+          ...(Object.keys(customClaims).length > 0 && { claims: customClaims }),
         },
       };
     } catch (error) {
