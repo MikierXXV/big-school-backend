@@ -20,11 +20,14 @@ import { IHashingService } from '../../application/ports/hashing.service.port.js
 import { ITokenService } from '../../application/ports/token.service.port.js';
 import { UserRepository } from '../../domain/repositories/user.repository.interface.js';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository.interface.js';
+import { PasswordResetTokenRepository } from '../../domain/repositories/password-reset-token.repository.interface.js';
 
 import { RegisterUserUseCase } from '../../application/use-cases/auth/register-user.use-case.js';
 import { LoginUserUseCase } from '../../application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../application/use-cases/auth/refresh-session.use-case.js';
 import { VerifyEmailUseCase } from '../../application/use-cases/auth/verify-email.use-case.js';
+import { RequestPasswordResetUseCase } from '../../application/use-cases/auth/request-password-reset.use-case.js';
+import { ConfirmPasswordResetUseCase } from '../../application/use-cases/auth/confirm-password-reset.use-case.js';
 
 import { ConsoleLogger } from '../logging/console-logger.service.js';
 import { SystemDateTimeService } from '../services/system-datetime.service.js';
@@ -34,6 +37,7 @@ import { JwtTokenService } from '../services/jwt-token.service.js';
 
 import { InMemoryUserRepository } from '../persistence/in-memory/in-memory-user.repository.js';
 import { InMemoryRefreshTokenRepository } from '../persistence/in-memory/in-memory-refresh-token.repository.js';
+import { InMemoryPasswordResetTokenRepository } from '../persistence/in-memory/in-memory-password-reset-token.repository.js';
 
 import { loadEnvironmentConfig, EnvironmentConfig, ServerConfig } from '../config/environment.config.js';
 import { loadJwtConfig, JwtConfig } from '../config/jwt.config.js';
@@ -60,12 +64,15 @@ export interface AppContainer {
   // Repositories
   readonly userRepository: UserRepository;
   readonly refreshTokenRepository: RefreshTokenRepository;
+  readonly passwordResetTokenRepository: PasswordResetTokenRepository;
 
   // Use Cases
   readonly registerUserUseCase: RegisterUserUseCase;
   readonly loginUserUseCase: LoginUserUseCase;
   readonly refreshSessionUseCase: RefreshSessionUseCase;
   readonly verifyEmailUseCase: VerifyEmailUseCase;
+  readonly requestPasswordResetUseCase: RequestPasswordResetUseCase;
+  readonly confirmPasswordResetUseCase: ConfirmPasswordResetUseCase;
 
   // Config
   readonly config: ContainerConfig;
@@ -103,6 +110,7 @@ export function createContainer(): AppContainer {
   // ============================================
   const userRepository: UserRepository = new InMemoryUserRepository();
   const refreshTokenRepository: RefreshTokenRepository = new InMemoryRefreshTokenRepository();
+  const passwordResetTokenRepository: PasswordResetTokenRepository = new InMemoryPasswordResetTokenRepository();
 
   // ============================================
   // 4. USE CASES
@@ -143,6 +151,25 @@ export function createContainer(): AppContainer {
     logger: logger.child({ useCase: 'VerifyEmail' }),
   });
 
+  const requestPasswordResetUseCase = new RequestPasswordResetUseCase({
+    userRepository,
+    passwordResetTokenRepository,
+    tokenService,
+    uuidGenerator,
+    dateTimeService,
+    logger: logger.child({ useCase: 'RequestPasswordReset' }),
+  });
+
+  const confirmPasswordResetUseCase = new ConfirmPasswordResetUseCase({
+    userRepository,
+    passwordResetTokenRepository,
+    refreshTokenRepository,
+    tokenService,
+    hashingService,
+    dateTimeService,
+    logger: logger.child({ useCase: 'ConfirmPasswordReset' }),
+  });
+
   // ============================================
   // 5. RETURN CONTAINER
   // ============================================
@@ -157,12 +184,15 @@ export function createContainer(): AppContainer {
     // Repositories
     userRepository,
     refreshTokenRepository,
+    passwordResetTokenRepository,
 
     // Use Cases
     registerUserUseCase,
     loginUserUseCase,
     refreshSessionUseCase,
     verifyEmailUseCase,
+    requestPasswordResetUseCase,
+    confirmPasswordResetUseCase,
 
     // Config
     config: {

@@ -19,3 +19,4 @@
 
 export * from './user.repository.interface.js';
 export * from './refresh-token.repository.interface.js';
+export * from './password-reset-token.repository.interface.js';

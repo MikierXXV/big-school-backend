@@ -25,6 +25,8 @@ import { RegisterUserUseCase } from '../../../application/use-cases/auth/registe
 import { LoginUserUseCase } from '../../../application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../../application/use-cases/auth/refresh-session.use-case.js';
 import { VerifyEmailUseCase } from '../../../application/use-cases/auth/verify-email.use-case.js';
+import { RequestPasswordResetUseCase } from '../../../application/use-cases/auth/request-password-reset.use-case.js';
+import { ConfirmPasswordResetUseCase } from '../../../application/use-cases/auth/confirm-password-reset.use-case.js';
 import {
   RegisterUserRequestDto,
   RegisterUserResponseDto,
@@ -41,6 +43,12 @@ import {
   VerifyEmailRequestDto,
   VerifyEmailResponseDto,
 } from '../../../application/dtos/auth/verify-email.dto.js';
+import {
+  RequestPasswordResetRequestDto,
+  RequestPasswordResetResponseDto,
+  ConfirmPasswordResetRequestDto,
+  ConfirmPasswordResetResponseDto,
+} from '../../../application/dtos/auth/password-reset.dto.js';
 
 /**
  * Request HTTP genérico (independiente del framework).
@@ -80,6 +88,8 @@ export interface AuthControllerDependencies {
   readonly loginUserUseCase: LoginUserUseCase;
   readonly refreshSessionUseCase: RefreshSessionUseCase;
   readonly verifyEmailUseCase: VerifyEmailUseCase;
+  readonly requestPasswordResetUseCase: RequestPasswordResetUseCase;
+  readonly confirmPasswordResetUseCase: ConfirmPasswordResetUseCase;
 }
 
 /**
@@ -231,6 +241,61 @@ export class AuthController {
         data: {
           message: 'Logged out successfully',
         },
+      },
+    };
+  }
+
+  /**
+   * Maneja POST /auth/password-reset
+   *
+   * Solicita recuperación de contraseña.
+   * Siempre retorna 200 para no revelar si el email existe.
+   *
+   * @param request - Request HTTP con email
+   * @returns Response HTTP con mensaje genérico
+   */
+  public async requestPasswordReset(
+    request: HttpRequest<RequestPasswordResetRequestDto>
+  ): Promise<HttpResponse<RequestPasswordResetResponseDto>> {
+    // Extract DTO from body
+    const dto = request.body;
+
+    // Execute use case (errors propagate to error handler)
+    const result = await this.deps.requestPasswordResetUseCase.execute(dto);
+
+    // Return successful response
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja POST /auth/password-reset/confirm
+   *
+   * Confirma el cambio de contraseña con el token recibido.
+   *
+   * @param request - Request HTTP con token y nueva contraseña
+   * @returns Response HTTP con resultado
+   */
+  public async confirmPasswordReset(
+    request: HttpRequest<ConfirmPasswordResetRequestDto>
+  ): Promise<HttpResponse<ConfirmPasswordResetResponseDto>> {
+    // Extract DTO from body
+    const dto = request.body;
+
+    // Execute use case (errors propagate to error handler)
+    const result = await this.deps.confirmPasswordResetUseCase.execute(dto);
+
+    // Return successful response
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
       },
     };
   }

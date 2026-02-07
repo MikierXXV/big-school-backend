@@ -24,11 +24,15 @@ import {
   validateLoginRequest,
   validateRefreshRequest,
   validateVerifyEmailRequest,
+  validateRequestPasswordResetRequest,
+  validateConfirmPasswordResetRequest,
 } from './validators/auth.validators.js';
 import { RegisterUserUseCase } from '../../application/use-cases/auth/register-user.use-case.js';
 import { LoginUserUseCase } from '../../application/use-cases/auth/login-user.use-case.js';
 import { RefreshSessionUseCase } from '../../application/use-cases/auth/refresh-session.use-case.js';
 import { VerifyEmailUseCase } from '../../application/use-cases/auth/verify-email.use-case.js';
+import { RequestPasswordResetUseCase } from '../../application/use-cases/auth/request-password-reset.use-case.js';
+import { ConfirmPasswordResetUseCase } from '../../application/use-cases/auth/confirm-password-reset.use-case.js';
 import { ILogger } from '../../application/ports/logger.port.js';
 import { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 import { ITokenService } from '../../application/ports/token.service.port.js';
@@ -44,6 +48,8 @@ export interface AppDependencies {
   loginUserUseCase: LoginUserUseCase;
   refreshSessionUseCase: RefreshSessionUseCase;
   verifyEmailUseCase: VerifyEmailUseCase;
+  requestPasswordResetUseCase: RequestPasswordResetUseCase;
+  confirmPasswordResetUseCase: ConfirmPasswordResetUseCase;
   isProduction?: boolean;
   version?: string;
 }
@@ -82,6 +88,8 @@ export function createApp(deps: AppDependencies): Express {
     loginUserUseCase: deps.loginUserUseCase,
     refreshSessionUseCase: deps.refreshSessionUseCase,
     verifyEmailUseCase: deps.verifyEmailUseCase,
+    requestPasswordResetUseCase: deps.requestPasswordResetUseCase,
+    confirmPasswordResetUseCase: deps.confirmPasswordResetUseCase,
   });
   const healthController = new HealthController(deps.version);
 
@@ -146,6 +154,19 @@ export function createApp(deps: AppDependencies): Express {
     '/auth/logout',
     createExpressAuthMiddleware(authMiddleware),
     adaptRoute(authController, 'logout')
+  );
+
+  // Password reset routes
+  app.post(
+    '/auth/password-reset',
+    createValidationMiddleware(validateRequestPasswordResetRequest),
+    adaptRoute(authController, 'requestPasswordReset')
+  );
+
+  app.post(
+    '/auth/password-reset/confirm',
+    createValidationMiddleware(validateConfirmPasswordResetRequest),
+    adaptRoute(authController, 'confirmPasswordReset')
   );
 
   // 404 handler

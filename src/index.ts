@@ -58,6 +58,8 @@ async function main(): Promise<void> {
     loginUserUseCase: container.loginUserUseCase,
     refreshSessionUseCase: container.refreshSessionUseCase,
     verifyEmailUseCase: container.verifyEmailUseCase,
+    requestPasswordResetUseCase: container.requestPasswordResetUseCase,
+    confirmPasswordResetUseCase: container.confirmPasswordResetUseCase,
     isProduction: config.server.isProduction,
     version: process.env.npm_package_version || '1.0.0',
   });
@@ -80,6 +82,8 @@ async function main(): Promise<void> {
       refresh: `http://${host}:${port}/auth/refresh`,
       verifyEmail: `http://${host}:${port}/auth/verify-email`,
       logout: `http://${host}:${port}/auth/logout`,
+      passwordReset: `http://${host}:${port}/auth/password-reset`,
+      passwordResetConfirm: `http://${host}:${port}/auth/password-reset/confirm`,
     });
   });
 

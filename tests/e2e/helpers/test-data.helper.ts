@@ -43,3 +43,11 @@ export const WEAK_PASSWORDS = {
  * Valid password for tests
  */
 export const VALID_PASSWORD = 'SecureP@ss123';
+
+/**
+ * Generates a valid password with random suffix for uniqueness
+ */
+export function generateValidPassword(): string {
+  const random = Math.random().toString(36).substring(2, 6);
+  return `NewP@ss${random}123`;
+}
