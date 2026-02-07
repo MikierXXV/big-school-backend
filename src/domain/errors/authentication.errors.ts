@@ -213,3 +213,50 @@ export class EmailAlreadyVerifiedError extends DomainError {
     );
   }
 }
+
+// ============================================
+// PASSWORD RESET ERRORS
+// ============================================
+
+/**
+ * Error: Token de recuperación de contraseña inválido.
+ * Se lanza cuando el token de password reset no es válido.
+ *
+ * SEGURIDAD: No revelar detalles específicos del error.
+ */
+export class InvalidPasswordResetTokenError extends DomainError {
+  public readonly code = 'DOMAIN_INVALID_PASSWORD_RESET_TOKEN';
+
+  constructor(reason?: string) {
+    super(
+      `Invalid password reset token${reason ? `: ${reason}` : ''}`,
+      { reason }
+    );
+  }
+}
+
+/**
+ * Error: Token de recuperación de contraseña expirado.
+ * Se lanza cuando el token ha superado su tiempo de validez (30 min).
+ */
+export class PasswordResetTokenExpiredError extends DomainError {
+  public readonly code = 'DOMAIN_PASSWORD_RESET_TOKEN_EXPIRED';
+
+  constructor() {
+    super('Password reset token has expired. Please request a new one.');
+  }
+}
+
+/**
+ * Error: Token de recuperación ya utilizado.
+ * Se lanza cuando se intenta usar un token que ya fue usado.
+ *
+ * SEGURIDAD: Los tokens de password reset son de un solo uso.
+ */
+export class PasswordResetTokenAlreadyUsedError extends DomainError {
+  public readonly code = 'DOMAIN_PASSWORD_RESET_TOKEN_ALREADY_USED';
+
+  constructor() {
+    super('This password reset link has already been used.');
+  }
+}

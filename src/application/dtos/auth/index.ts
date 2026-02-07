@@ -15,3 +15,4 @@ export * from './login.dto.js';
 export * from './refresh-session.dto.js';
 export * from './token-response.dto.js';
 export * from './verify-email.dto.js';
+export * from './password-reset.dto.js';

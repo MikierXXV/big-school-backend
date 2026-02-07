@@ -18,3 +18,4 @@ export * from './email.value-object.js';
 export * from './password-hash.value-object.js';
 export * from './access-token.value-object.js';
 export * from './refresh-token.value-object.js';
+export * from './password-reset-token.value-object.js';

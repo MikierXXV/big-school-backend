@@ -155,11 +155,16 @@ export class JwtTokenService implements ITokenService {
         audience: this.config.audience,
       }) as Record<string, unknown>;
 
+      // Extract standard claims
+      const { sub, email, iat, exp, iss, aud, ...customClaims } = decoded;
+
       return {
         isValid: true,
         payload: {
-          userId: decoded.sub as string,
-          email: decoded.email as string,
+          userId: sub as string,
+          email: email as string,
+          // Include any custom claims (like purpose, tokenId)
+          claims: Object.keys(customClaims).length > 0 ? customClaims : undefined,
         },
       };
     } catch (error) {

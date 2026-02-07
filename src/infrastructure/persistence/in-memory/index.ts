@@ -15,3 +15,4 @@
 
 export * from './in-memory-user.repository.js';
 export * from './in-memory-refresh-token.repository.js';
+export * from './in-memory-password-reset-token.repository.js';
