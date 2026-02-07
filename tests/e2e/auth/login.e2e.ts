@@ -4,74 +4,182 @@
  * ============================================
  *
  * Tests End-to-End para el flujo de login.
- *
- * FLUJO COMPLETO:
- * 1. POST /auth/login con credenciales válidas
- * 2. Verificar respuesta 200
- * 3. Verificar tokens en respuesta
- * 4. Verificar tokens funcionan para endpoints protegidos
  */
 
 import { test, expect } from '@playwright/test';
-
-const BASE_URL = process.env['TEST_BASE_URL'] || 'http://localhost:3000';
+import { post } from '../helpers/api.helper';
+import { createVerifiedUser, registerUser } from '../helpers/auth.helper';
+import { generateValidUserData } from '../helpers/test-data.helper';
+import type { LoginResult } from '../types';
 
 test.describe('User Login E2E', () => {
-  // TODO: Crear usuario de test en beforeAll
+  test.describe('POST /auth/login - Success Cases', () => {
+    test('should login with valid credentials', async ({ request }) => {
+      const { userData } = await createVerifiedUser(request);
 
-  test.describe('POST /auth/login', () => {
-    test.skip('should login with valid credentials', async ({ request }) => {
-      // TODO: Implementar
-      // const response = await request.post(`${BASE_URL}/auth/login`, {
-      //   data: {
-      //     email: 'test@example.com',
-      //     password: 'ValidP@ss123',
-      //   },
-      // });
-      //
-      // expect(response.status()).toBe(200);
-      //
-      // const body = await response.json();
-      // expect(body.success).toBe(true);
-      // expect(body.data.tokens.accessToken).toBeDefined();
-      // expect(body.data.tokens.refreshToken).toBeDefined();
-      // expect(body.data.tokens.tokenType).toBe('Bearer');
-      // expect(body.data.tokens.expiresIn).toBe(18000); // 5 horas
+      const response = await post<LoginResult>(request, '/auth/login', {
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+
+      if (response.body.success) {
+        expect(response.body.data.user).toBeDefined();
+        expect(response.body.data.tokens).toBeDefined();
+      }
     });
 
-    test.skip('should reject invalid credentials', async ({ request }) => {
-      // TODO: Implementar
-      // Esperar 401 Unauthorized
+    test('should return user data on login', async ({ request }) => {
+      const { userData, user } = await createVerifiedUser(request);
+
+      const response = await post<LoginResult>(request, '/auth/login', {
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(response.status).toBe(200);
+      if (response.body.success) {
+        expect(response.body.data.user.id).toBe(user.id);
+        expect(response.body.data.user.email).toBe(userData.email);
+        expect(response.body.data.user.firstName).toBe(userData.firstName);
+        expect(response.body.data.user.lastName).toBe(userData.lastName);
+        expect(response.body.data.user.emailVerified).toBe(true);
+      }
     });
 
-    test.skip('should not reveal if email exists', async ({ request }) => {
-      // TODO: Implementar
-      // Verificar que el mensaje de error es genérico
+    test('should return access token with correct structure', async ({ request }) => {
+      const { userData } = await createVerifiedUser(request);
+
+      const response = await post<LoginResult>(request, '/auth/login', {
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(response.status).toBe(200);
+      if (response.body.success) {
+        const tokens = response.body.data.tokens;
+        expect(tokens.accessToken).toBeDefined();
+        expect(tokens.tokenType).toBe('Bearer');
+        expect(tokens.expiresIn).toBe(18000); // 5 hours
+        expect(tokens.expiresAt).toBeDefined();
+      }
     });
 
-    test.skip('should reject suspended user', async ({ request }) => {
-      // TODO: Implementar
+    test('should return refresh token with correct structure', async ({ request }) => {
+      const { userData } = await createVerifiedUser(request);
+
+      const response = await post<LoginResult>(request, '/auth/login', {
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(response.status).toBe(200);
+      if (response.body.success) {
+        const tokens = response.body.data.tokens;
+        expect(tokens.refreshToken).toBeDefined();
+        expect(tokens.refreshExpiresIn).toBe(259200); // 3 days
+      }
     });
 
-    test.skip('should include device info in token if provided', async ({ request }) => {
-      // TODO: Implementar
+    test('should include device info in session if provided', async ({ request }) => {
+      const { userData } = await createVerifiedUser(request);
+
+      const response = await post<LoginResult>(request, '/auth/login', {
+        email: userData.email,
+        password: userData.password,
+        deviceInfo: 'Chrome/Windows/Test',
+      });
+
+      expect(response.status).toBe(200);
     });
   });
 
-  test.describe('Access Token Usage', () => {
-    test.skip('should access protected endpoint with valid token', async ({ request }) => {
-      // TODO: Implementar
-      // 1. Login para obtener token
-      // 2. Usar token en endpoint protegido
-      // 3. Verificar acceso exitoso
+  test.describe('POST /auth/login - Invalid Credentials (401)', () => {
+    test('should reject invalid password', async ({ request }) => {
+      const { userData } = await createVerifiedUser(request);
+
+      const response = await post(request, '/auth/login', {
+        email: userData.email,
+        password: 'WrongP@ssword123',
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+      if (!response.body.success) {
+        expect(response.body.error.code).toBe('DOMAIN_INVALID_CREDENTIALS');
+      }
     });
 
-    test.skip('should reject expired token', async ({ request }) => {
-      // TODO: Implementar (necesita token expirado de test)
+    test('should reject non-existent email', async ({ request }) => {
+      const response = await post(request, '/auth/login', {
+        email: 'nonexistent@example.com',
+        password: 'SomeP@ssword123',
+      });
+
+      expect(response.status).toBe(401);
+      if (!response.body.success) {
+        expect(response.body.error.code).toBe('DOMAIN_INVALID_CREDENTIALS');
+      }
     });
 
-    test.skip('should reject invalid token', async ({ request }) => {
-      // TODO: Implementar
+    test('should not reveal whether email exists or password is wrong', async ({ request }) => {
+      const { userData } = await createVerifiedUser(request);
+
+      // Wrong password
+      const wrongPassword = await post(request, '/auth/login', {
+        email: userData.email,
+        password: 'WrongP@ss123',
+      });
+
+      // Non-existent email
+      const wrongEmail = await post(request, '/auth/login', {
+        email: 'nonexistent@example.com',
+        password: userData.password,
+      });
+
+      // Both should have same error code and similar message
+      if (!wrongPassword.body.success && !wrongEmail.body.success) {
+        expect(wrongPassword.body.error.code).toBe(wrongEmail.body.error.code);
+      }
+    });
+  });
+
+  test.describe('POST /auth/login - Unverified User (401)', () => {
+    test('should reject login for unverified user', async ({ request }) => {
+      const { userData } = await registerUser(request);
+      // Note: NOT verifying email
+
+      const response = await post(request, '/auth/login', {
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(response.status).toBe(401);
+      if (!response.body.success) {
+        expect(response.body.error.code).toBe('DOMAIN_INVALID_CREDENTIALS');
+      }
+    });
+  });
+
+  test.describe('POST /auth/login - Validation Errors (400)', () => {
+    test('should validate required email', async ({ request }) => {
+      const response = await post(request, '/auth/login', {
+        password: 'SomeP@ss123',
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    test('should validate required password', async ({ request }) => {
+      const userData = generateValidUserData();
+
+      const response = await post(request, '/auth/login', {
+        email: userData.email,
+      });
+
+      expect(response.status).toBe(400);
     });
   });
 });

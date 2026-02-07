@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * ============================================
  * PLAYWRIGHT CONFIGURATION
@@ -13,7 +14,7 @@
  * - Logout y revocación de tokens
  */
 
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   // Directorio de tests E2E
