@@ -9,7 +9,7 @@
  * RESPONSABILIDADES:
  * - Traducir entre entidades de dominio y filas de BD
  * - Ejecutar queries SQL
- * - Manejar conexiones/transacciones
+ * - Manejar conexiones via pool
  *
  * TABLA: users
  * - id: UUID PRIMARY KEY
@@ -22,11 +22,9 @@
  * - updated_at: TIMESTAMP NOT NULL
  * - last_login_at: TIMESTAMP NULL
  * - email_verified_at: TIMESTAMP NULL
- *
- * DEPENDENCIAS (a instalar):
- * - pg (node-postgres) o similar
  */
 
+import { Pool } from 'pg';
 import {
   UserRepository,
   PaginationOptions,
@@ -58,80 +56,95 @@ interface UserRow {
  */
 export class PostgresUserRepository implements UserRepository {
   /**
-   * Cliente de base de datos.
-   * Puede ser pg.Pool, Kysely, Drizzle, etc.
-   * @private
+   * Pool de conexiones a PostgreSQL.
    */
-  // private readonly db: DatabaseClient;
+  private readonly pool: Pool;
 
   /**
-   * Constructor con inyección del cliente de BD.
+   * Constructor con inyección del pool de conexiones.
    *
-   * @param db - Cliente de base de datos
+   * @param pool - Pool de conexiones PostgreSQL
    */
-  // constructor(db: DatabaseClient) {
-  //   this.db = db;
-  // }
+  constructor(pool: Pool) {
+    this.pool = pool;
+  }
 
   /**
    * Guarda un nuevo usuario.
    *
    * @param user - Usuario a guardar
-   *
-   * TODO: Implementar INSERT
    */
-  public async save(_user: User): Promise<void> {
-    // TODO: Implementar
-    // const query = `
-    //   INSERT INTO users (
-    //     id, email, password_hash, first_name, last_name,
-    //     status, created_at, updated_at, last_login_at, email_verified_at
-    //   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    // `;
-    //
-    // await this.db.query(query, [
-    //   user.id.value,
-    //   user.email.value,
-    //   user.passwordHash.value,
-    //   user.firstName,
-    //   user.lastName,
-    //   user.status,
-    //   user.createdAt,
-    //   user.updatedAt,
-    //   user.lastLoginAt,
-    //   user.emailVerifiedAt,
-    // ]);
+  public async save(user: User): Promise<void> {
+    const query = `
+      INSERT INTO users (
+        id, email, password_hash, first_name, last_name,
+        status, created_at, updated_at, last_login_at, email_verified_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `;
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.save not implemented');
+    await this.pool.query(query, [
+      user.id.value,
+      user.email.value,
+      user.passwordHash.value,
+      user.firstName,
+      user.lastName,
+      user.status,
+      user.createdAt,
+      user.updatedAt,
+      user.lastLoginAt,
+      user.emailVerifiedAt,
+    ]);
   }
 
   /**
    * Actualiza un usuario existente.
    *
    * @param user - Usuario con cambios
-   *
-   * TODO: Implementar UPDATE
    */
-  public async update(_user: User): Promise<void> {
-    // TODO: Implementar
+  public async update(user: User): Promise<void> {
+    const query = `
+      UPDATE users SET
+        email = $2,
+        password_hash = $3,
+        first_name = $4,
+        last_name = $5,
+        status = $6,
+        updated_at = $7,
+        last_login_at = $8,
+        email_verified_at = $9
+      WHERE id = $1
+    `;
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.update not implemented');
+    const result = await this.pool.query(query, [
+      user.id.value,
+      user.email.value,
+      user.passwordHash.value,
+      user.firstName,
+      user.lastName,
+      user.status,
+      user.updatedAt,
+      user.lastLoginAt,
+      user.emailVerifiedAt,
+    ]);
+
+    if (result.rowCount === 0) {
+      throw new Error(`User with id ${user.id.value} not found`);
+    }
   }
 
   /**
    * Elimina un usuario.
    *
    * @param userId - ID del usuario
-   *
-   * TODO: Implementar DELETE (o soft delete)
    */
-  public async delete(_userId: UserId): Promise<void> {
-    // TODO: Implementar
+  public async delete(userId: UserId): Promise<void> {
+    const query = 'DELETE FROM users WHERE id = $1';
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.delete not implemented');
+    const result = await this.pool.query(query, [userId.value]);
+
+    if (result.rowCount === 0) {
+      throw new Error(`User with id ${userId.value} not found`);
+    }
   }
 
   /**
@@ -139,14 +152,23 @@ export class PostgresUserRepository implements UserRepository {
    *
    * @param id - ID del usuario
    * @returns User o null
-   *
-   * TODO: Implementar SELECT
    */
-  public async findById(_id: UserId): Promise<User | null> {
-    // TODO: Implementar
+  public async findById(id: UserId): Promise<User | null> {
+    const query = `
+      SELECT id, email, password_hash, first_name, last_name,
+             status, created_at, updated_at, last_login_at, email_verified_at
+      FROM users
+      WHERE id = $1
+    `;
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.findById not implemented');
+    const result = await this.pool.query<UserRow>(query, [id.value]);
+
+    const row = result.rows[0];
+    if (!row) {
+      return null;
+    }
+
+    return this.rowToEntity(row);
   }
 
   /**
@@ -154,14 +176,23 @@ export class PostgresUserRepository implements UserRepository {
    *
    * @param email - Email del usuario
    * @returns User o null
-   *
-   * TODO: Implementar SELECT
    */
-  public async findByEmail(_email: Email): Promise<User | null> {
-    // TODO: Implementar
+  public async findByEmail(email: Email): Promise<User | null> {
+    const query = `
+      SELECT id, email, password_hash, first_name, last_name,
+             status, created_at, updated_at, last_login_at, email_verified_at
+      FROM users
+      WHERE email = $1
+    `;
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.findByEmail not implemented');
+    const result = await this.pool.query<UserRow>(query, [email.value]);
+
+    const row = result.rows[0];
+    if (!row) {
+      return null;
+    }
+
+    return this.rowToEntity(row);
   }
 
   /**
@@ -169,14 +200,13 @@ export class PostgresUserRepository implements UserRepository {
    *
    * @param email - Email a verificar
    * @returns true si existe
-   *
-   * TODO: Implementar SELECT COUNT
    */
-  public async existsByEmail(_email: Email): Promise<boolean> {
-    // TODO: Implementar
+  public async existsByEmail(email: Email): Promise<boolean> {
+    const query = 'SELECT 1 FROM users WHERE email = $1 LIMIT 1';
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.existsByEmail not implemented');
+    const result = await this.pool.query(query, [email.value]);
+
+    return result.rows.length > 0;
   }
 
   /**
@@ -184,16 +214,47 @@ export class PostgresUserRepository implements UserRepository {
    *
    * @param options - Opciones de paginación
    * @returns Resultado paginado
-   *
-   * TODO: Implementar SELECT con LIMIT/OFFSET
    */
-  public async findAll(
-    _options: PaginationOptions
-  ): Promise<PaginatedResult<User>> {
-    // TODO: Implementar
+  public async findAll(options: PaginationOptions): Promise<PaginatedResult<User>> {
+    const { page, limit, sortBy = 'created_at', sortOrder = 'desc' } = options;
+    const offset = (page - 1) * limit;
 
-    // Placeholder
-    throw new Error('PostgresUserRepository.findAll not implemented');
+    // Validar sortBy para prevenir SQL injection
+    const allowedSortColumns = ['created_at', 'updated_at', 'email', 'first_name', 'last_name', 'status'];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at';
+    const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+    // Query para datos
+    const dataQuery = `
+      SELECT id, email, password_hash, first_name, last_name,
+             status, created_at, updated_at, last_login_at, email_verified_at
+      FROM users
+      ORDER BY ${sortColumn} ${order}
+      LIMIT $1 OFFSET $2
+    `;
+
+    // Query para total
+    const countQuery = 'SELECT COUNT(*) as total FROM users';
+
+    // Ejecutar ambas queries en paralelo
+    const [dataResult, countResult] = await Promise.all([
+      this.pool.query<UserRow>(dataQuery, [limit, offset]),
+      this.pool.query<{ total: string }>(countQuery),
+    ]);
+
+    const countRow = countResult.rows[0];
+    const total = countRow ? parseInt(countRow.total, 10) : 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: dataResult.rows.map((row) => this.rowToEntity(row)),
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1,
+    };
   }
 
   /**
@@ -201,10 +262,8 @@ export class PostgresUserRepository implements UserRepository {
    *
    * @param row - Fila de la tabla users
    * @returns Entidad User
-   *
-   * @private
    */
-  private _rowToEntity(row: UserRow): User {
+  private rowToEntity(row: UserRow): User {
     const props: UserProps = {
       id: UserId.create(row.id),
       email: Email.create(row.email),

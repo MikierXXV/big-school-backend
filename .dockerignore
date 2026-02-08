@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────
+# .dockerignore - Files to exclude from Docker build context
+# ─────────────────────────────────────────────────────────────
+
+# Dependencies (will be installed in container)
+node_modules
+
+# Build output (will be built in container)
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files (secrets should be passed as env vars)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files and coverage
+tests
+coverage
+.nyc_output
+test-results
+test-results.json
+playwright-report
+
+# Documentation (not needed in production)
+docs
+*.md
+!README.md
+
+# TypeScript config (not needed in production)
+tsconfig.json
+
+# Playwright config
+playwright.config.ts
+
+# Vitest config
+vitest.config.ts
+
+# OS files
+.DS_Store
+Thumbs.db
