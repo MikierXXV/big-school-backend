@@ -60,10 +60,12 @@ export interface ApiErrorResponse {
     code: string;
     message: string;
     details?: unknown;
+    retryAfter?: number;
   };
 }
 
 export type ApiResponse<T> = {
   status: number;
   body: ApiSuccessResponse<T> | ApiErrorResponse;
+  headers: Record<string, string>;
 };

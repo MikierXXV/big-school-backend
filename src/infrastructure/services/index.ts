@@ -11,3 +11,4 @@ export * from './jwt-token.service.js';
 export * from './bcrypt-hashing.service.js';
 export * from './system-datetime.service.js';
 export * from './crypto-uuid-generator.service.js';
+export * from './in-memory-rate-limiter.service.js';

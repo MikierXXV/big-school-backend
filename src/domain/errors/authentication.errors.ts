@@ -260,3 +260,52 @@ export class PasswordResetTokenAlreadyUsedError extends DomainError {
     super('This password reset link has already been used.');
   }
 }
+
+// ============================================
+// RATE LIMITING & LOCKOUT ERRORS
+// ============================================
+
+/**
+ * Error: Cuenta bloqueada.
+ * Se lanza cuando se intenta login con una cuenta bloqueada por
+ * demasiados intentos fallidos.
+ *
+ * SEGURIDAD: No revelar si el password era correcto durante el bloqueo.
+ */
+export class AccountLockedError extends DomainError {
+  public readonly code = 'DOMAIN_ACCOUNT_LOCKED';
+
+  /**
+   * Segundos restantes hasta que se desbloquee la cuenta.
+   */
+  public readonly remainingSeconds: number;
+
+  constructor(remainingSeconds: number) {
+    super(
+      `Account is temporarily locked. Try again in ${Math.ceil(remainingSeconds / 60)} minute(s).`,
+      { remainingSeconds }
+    );
+    this.remainingSeconds = remainingSeconds;
+  }
+}
+
+/**
+ * Error: Demasiadas solicitudes.
+ * Se lanza cuando se excede el límite de rate limiting.
+ */
+export class TooManyRequestsError extends DomainError {
+  public readonly code = 'DOMAIN_TOO_MANY_REQUESTS';
+
+  /**
+   * Segundos hasta que se pueda reintentar.
+   */
+  public readonly retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super(
+      `Too many requests. Please try again in ${retryAfterSeconds} second(s).`,
+      { retryAfterSeconds }
+    );
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}

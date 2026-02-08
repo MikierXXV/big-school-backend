@@ -62,6 +62,11 @@ export interface UserProps {
   readonly updatedAt: Date;
   readonly lastLoginAt: Date | null;
   readonly emailVerifiedAt: Date | null;
+  // Account Lockout fields
+  readonly failedLoginAttempts: number;
+  readonly lockoutUntil: Date | null;
+  readonly lockoutCount: number;
+  readonly lastFailedLoginAt: Date | null;
 }
 
 /**
@@ -82,6 +87,18 @@ export interface CreateUserData {
  * Contiene métodos que expresan reglas de negocio.
  */
 export class User {
+  // ============================================
+  // LOCKOUT CONSTANTS
+  // ============================================
+
+  /** Maximum failed login attempts before lockout */
+  public static readonly MAX_FAILED_ATTEMPTS = 5;
+
+  /** Base lockout duration in milliseconds (15 minutes) */
+  public static readonly BASE_LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+
+  /** Maximum lockout duration in milliseconds (1 hour) */
+  public static readonly MAX_LOCKOUT_DURATION_MS = 60 * 60 * 1000;
   /**
    * Propiedades internas del usuario.
    * @private
@@ -130,6 +147,11 @@ export class User {
       updatedAt: now,
       lastLoginAt: null,
       emailVerifiedAt: null,
+      // Lockout fields initialized to safe defaults
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      lockoutCount: 0,
+      lastFailedLoginAt: null,
     };
 
     const user = new User(props);
@@ -209,6 +231,28 @@ export class User {
   public get emailVerifiedAt(): Date | null {
     return this._props.emailVerifiedAt
       ? new Date(this._props.emailVerifiedAt)
+      : null;
+  }
+
+  /** Obtiene el número de intentos de login fallidos */
+  public get failedLoginAttempts(): number {
+    return this._props.failedLoginAttempts;
+  }
+
+  /** Obtiene la fecha hasta la cual la cuenta está bloqueada */
+  public get lockoutUntil(): Date | null {
+    return this._props.lockoutUntil ? new Date(this._props.lockoutUntil) : null;
+  }
+
+  /** Obtiene el número de veces que la cuenta ha sido bloqueada */
+  public get lockoutCount(): number {
+    return this._props.lockoutCount;
+  }
+
+  /** Obtiene la fecha del último intento de login fallido */
+  public get lastFailedLoginAt(): Date | null {
+    return this._props.lastFailedLoginAt
+      ? new Date(this._props.lastFailedLoginAt)
       : null;
   }
 
@@ -354,6 +398,121 @@ export class User {
       ...this._props,
       status: UserStatus.ACTIVE,
       updatedAt: reactivatedAt,
+    };
+
+    return new User(newProps);
+  }
+
+  // ============================================
+  // ACCOUNT LOCKOUT METHODS
+  // ============================================
+
+  /**
+   * Verifica si la cuenta está actualmente bloqueada.
+   *
+   * @param now - Fecha actual para comparación
+   * @returns true si la cuenta está bloqueada
+   */
+  public isLockedOut(now: Date): boolean {
+    if (!this._props.lockoutUntil) {
+      return false;
+    }
+    return this._props.lockoutUntil.getTime() > now.getTime();
+  }
+
+  /**
+   * Obtiene los segundos restantes de bloqueo.
+   *
+   * @param now - Fecha actual para comparación
+   * @returns Segundos restantes (0 si no está bloqueado)
+   */
+  public getRemainingLockoutSeconds(now: Date): number {
+    if (!this._props.lockoutUntil) {
+      return 0;
+    }
+    const remainingMs = this._props.lockoutUntil.getTime() - now.getTime();
+    return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+  }
+
+  /**
+   * Verifica si el usuario puede intentar hacer login.
+   * Considera tanto el estado como el bloqueo.
+   *
+   * @param now - Fecha actual para comparación
+   * @returns true si puede intentar login
+   */
+  public canAttemptLogin(now: Date): boolean {
+    // Check if account is locked
+    if (this.isLockedOut(now)) {
+      return false;
+    }
+    // Check if user status allows login attempts
+    // Note: We allow attempts for PENDING_VERIFICATION to give proper error
+    return (
+      this._props.status === UserStatus.ACTIVE ||
+      this._props.status === UserStatus.PENDING_VERIFICATION
+    );
+  }
+
+  /**
+   * Registra un intento de login fallido.
+   * Incrementa el contador y bloquea si se excede el límite.
+   *
+   * @param now - Fecha del intento
+   * @returns Nueva instancia con intento registrado
+   */
+  public recordFailedLogin(now: Date): User {
+    const newFailedAttempts = this._props.failedLoginAttempts + 1;
+
+    // Check if we need to lock the account
+    if (newFailedAttempts >= User.MAX_FAILED_ATTEMPTS) {
+      // Calculate lockout duration (progressive: 15min, 30min, 1h, etc.)
+      const newLockoutCount = this._props.lockoutCount + 1;
+      const lockoutDurationMs = Math.min(
+        User.BASE_LOCKOUT_DURATION_MS * newLockoutCount,
+        User.MAX_LOCKOUT_DURATION_MS
+      );
+      const lockoutUntil = new Date(now.getTime() + lockoutDurationMs);
+
+      const newProps: UserProps = {
+        ...this._props,
+        failedLoginAttempts: newFailedAttempts,
+        lastFailedLoginAt: now,
+        lockoutUntil,
+        lockoutCount: newLockoutCount,
+        updatedAt: now,
+      };
+
+      return new User(newProps);
+    }
+
+    // Just increment failed attempts
+    const newProps: UserProps = {
+      ...this._props,
+      failedLoginAttempts: newFailedAttempts,
+      lastFailedLoginAt: now,
+      updatedAt: now,
+    };
+
+    return new User(newProps);
+  }
+
+  /**
+   * Registra un login exitoso.
+   * Resetea los contadores de intentos fallidos y bloqueos.
+   *
+   * @param now - Fecha del login exitoso
+   * @returns Nueva instancia con contadores reseteados
+   */
+  public recordSuccessfulLogin(now: Date): User {
+    const newProps: UserProps = {
+      ...this._props,
+      lastLoginAt: now,
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      lockoutCount: 0,
+      lastFailedLoginAt: null,
+      updatedAt: now,
     };
 
     return new User(newProps);

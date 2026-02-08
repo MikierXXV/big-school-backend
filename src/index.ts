@@ -54,6 +54,7 @@ async function main(): Promise<void> {
     logger,
     uuidGenerator: container.uuidGenerator,
     tokenService: container.tokenService,
+    rateLimiter: container.rateLimiter,
     registerUserUseCase: container.registerUserUseCase,
     loginUserUseCase: container.loginUserUseCase,
     refreshSessionUseCase: container.refreshSessionUseCase,

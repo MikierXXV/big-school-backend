@@ -16,6 +16,7 @@
  * - DateTimeService: Abstracción de fecha/hora
  * - UuidGenerator: Generación de UUIDs
  * - Logger: Logging abstracto
+ * - RateLimiter: Rate limiting para protección contra brute force
  */
 
 export * from './token.service.port.js';
@@ -23,3 +24,4 @@ export * from './hashing.service.port.js';
 export * from './datetime.service.port.js';
 export * from './uuid-generator.port.js';
 export * from './logger.port.js';
+export * from './rate-limiter.port.js';

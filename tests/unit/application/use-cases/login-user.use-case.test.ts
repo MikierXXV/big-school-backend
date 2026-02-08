@@ -35,6 +35,7 @@ import { AccessToken } from '../../../../src/domain/value-objects/access-token.v
 import { RefreshToken } from '../../../../src/domain/value-objects/refresh-token.value-object.js';
 import {
   InvalidCredentialsError,
+  AccountLockedError,
 } from '../../../../src/domain/errors/authentication.errors.js';
 import {
   UserNotActiveError,
@@ -96,6 +97,47 @@ describe('LoginUser Use Case', () => {
   const createSuspendedUser = (): User => {
     const user = createActiveUser();
     return user.suspend(new Date('2024-01-12T10:00:00Z'));
+  };
+
+  // Helper to create a locked out user
+  const createLockedOutUser = (): User => {
+    const lockoutUntil = new Date(FIXED_DATE.getTime() + 15 * 60 * 1000); // 15 minutes from now
+    return User.fromPersistence({
+      id: UserId.create(VALID_UUID),
+      email: Email.create(VALID_EMAIL),
+      passwordHash: PasswordHash.fromHash(VALID_HASH),
+      firstName: 'John',
+      lastName: 'Doe',
+      status: UserStatus.ACTIVE,
+      createdAt: new Date('2024-01-01T10:00:00Z'),
+      updatedAt: new Date('2024-01-15T09:50:00Z'),
+      lastLoginAt: new Date('2024-01-14T10:00:00Z'),
+      emailVerifiedAt: new Date('2024-01-01T12:00:00Z'),
+      failedLoginAttempts: 5,
+      lockoutUntil: lockoutUntil,
+      lockoutCount: 1,
+      lastFailedLoginAt: new Date('2024-01-15T09:50:00Z'),
+    });
+  };
+
+  // Helper to create a user with failed attempts but not locked
+  const createUserWithFailedAttempts = (attempts: number): User => {
+    return User.fromPersistence({
+      id: UserId.create(VALID_UUID),
+      email: Email.create(VALID_EMAIL),
+      passwordHash: PasswordHash.fromHash(VALID_HASH),
+      firstName: 'John',
+      lastName: 'Doe',
+      status: UserStatus.ACTIVE,
+      createdAt: new Date('2024-01-01T10:00:00Z'),
+      updatedAt: new Date('2024-01-15T09:00:00Z'),
+      lastLoginAt: new Date('2024-01-14T10:00:00Z'),
+      emailVerifiedAt: new Date('2024-01-01T12:00:00Z'),
+      failedLoginAttempts: attempts,
+      lockoutUntil: null,
+      lockoutCount: 0,
+      lastFailedLoginAt: new Date('2024-01-15T09:00:00Z'),
+    });
   };
 
   beforeEach(() => {
@@ -319,6 +361,10 @@ describe('LoginUser Use Case', () => {
           updatedAt: new Date(),
           lastLoginAt: null,
           emailVerifiedAt: new Date(),
+          failedLoginAttempts: 0,
+          lockoutUntil: null,
+          lockoutCount: 0,
+          lastFailedLoginAt: null,
         });
         (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(deactivatedUser);
 
@@ -362,6 +408,112 @@ describe('LoginUser Use Case', () => {
         }
 
         expect(mockLogger.warn).toHaveBeenCalled();
+      });
+    });
+
+    describe('account lockout', () => {
+      it('should throw AccountLockedError when user is locked out', async () => {
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(createLockedOutUser());
+
+        await expect(useCase.execute(validRequest)).rejects.toThrow(AccountLockedError);
+      });
+
+      it('should include remaining lockout time in AccountLockedError', async () => {
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(createLockedOutUser());
+
+        try {
+          await useCase.execute(validRequest);
+          expect.fail('Should have thrown AccountLockedError');
+        } catch (error) {
+          expect(error).toBeInstanceOf(AccountLockedError);
+          expect((error as AccountLockedError).remainingSeconds).toBeGreaterThan(0);
+        }
+      });
+
+      it('should record failed login attempt on wrong password', async () => {
+        const userWithAttempts = createUserWithFailedAttempts(2);
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(userWithAttempts);
+        (mockHashingService.verify as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+        await expect(useCase.execute(validRequest)).rejects.toThrow(InvalidCredentialsError);
+
+        expect(mockUserRepository.update).toHaveBeenCalledTimes(1);
+        const updatedUser = (mockUserRepository.update as ReturnType<typeof vi.fn>).mock.calls[0][0] as User;
+        expect(updatedUser.failedLoginAttempts).toBe(3);
+      });
+
+      it('should lock account after MAX_FAILED_ATTEMPTS failed attempts', async () => {
+        const userWithMaxAttempts = createUserWithFailedAttempts(User.MAX_FAILED_ATTEMPTS - 1);
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(userWithMaxAttempts);
+        (mockHashingService.verify as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+        await expect(useCase.execute(validRequest)).rejects.toThrow(InvalidCredentialsError);
+
+        const updatedUser = (mockUserRepository.update as ReturnType<typeof vi.fn>).mock.calls[0][0] as User;
+        expect(updatedUser.failedLoginAttempts).toBe(User.MAX_FAILED_ATTEMPTS);
+        expect(updatedUser.lockoutUntil).not.toBeNull();
+        expect(updatedUser.lockoutCount).toBe(1);
+      });
+
+      it('should reset lockout counters on successful login', async () => {
+        const userWithAttempts = createUserWithFailedAttempts(3);
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(userWithAttempts);
+        (mockHashingService.verify as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+
+        await useCase.execute(validRequest);
+
+        const updatedUser = (mockUserRepository.update as ReturnType<typeof vi.fn>).mock.calls[0][0] as User;
+        expect(updatedUser.failedLoginAttempts).toBe(0);
+        expect(updatedUser.lockoutUntil).toBeNull();
+        expect(updatedUser.lockoutCount).toBe(0);
+      });
+
+      it('should not increment failed attempts for non-existent user', async () => {
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+        await expect(useCase.execute(validRequest)).rejects.toThrow(InvalidCredentialsError);
+
+        // update should not be called since user doesn't exist
+        expect(mockUserRepository.update).not.toHaveBeenCalled();
+      });
+
+      it('should allow login after lockout expires', async () => {
+        // Create a user whose lockout has expired
+        const expiredLockoutUser = User.fromPersistence({
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date('2024-01-01T10:00:00Z'),
+          updatedAt: new Date('2024-01-15T09:00:00Z'),
+          lastLoginAt: new Date('2024-01-14T10:00:00Z'),
+          emailVerifiedAt: new Date('2024-01-01T12:00:00Z'),
+          failedLoginAttempts: 5,
+          lockoutUntil: new Date(FIXED_DATE.getTime() - 1000), // 1 second ago (expired)
+          lockoutCount: 1,
+          lastFailedLoginAt: new Date('2024-01-15T09:00:00Z'),
+        });
+
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(expiredLockoutUser);
+        (mockHashingService.verify as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+
+        const result = await useCase.execute(validRequest);
+
+        expect(result.success).toBe(true);
+        const updatedUser = (mockUserRepository.update as ReturnType<typeof vi.fn>).mock.calls[0][0] as User;
+        expect(updatedUser.failedLoginAttempts).toBe(0);
+        expect(updatedUser.lockoutUntil).toBeNull();
+      });
+
+      it('should check lockout before verifying password', async () => {
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(createLockedOutUser());
+
+        await expect(useCase.execute(validRequest)).rejects.toThrow(AccountLockedError);
+
+        // Password verification should NOT be called
+        expect(mockHashingService.verify).not.toHaveBeenCalled();
       });
     });
   });

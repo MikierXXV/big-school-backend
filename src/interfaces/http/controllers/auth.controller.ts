@@ -75,6 +75,7 @@ export interface HttpResponse<TData = unknown> {
       code: string;
       message: string;
       details?: unknown;
+      retryAfter?: number;
     };
   };
   headers?: Record<string, string>;

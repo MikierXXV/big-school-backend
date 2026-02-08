@@ -12,14 +12,19 @@ import { createApp, AppDependencies } from '../../../../src/interfaces/http/app.
 import { ILogger } from '../../../../src/application/ports/logger.port.js';
 import { IUuidGenerator } from '../../../../src/application/ports/uuid-generator.port.js';
 import { ITokenService } from '../../../../src/application/ports/token.service.port.js';
+import { IRateLimiter } from '../../../../src/application/ports/rate-limiter.port.js';
 
 describe('App Factory', () => {
   let mockLogger: ILogger;
   let mockUuidGenerator: IUuidGenerator;
   let mockTokenService: ITokenService;
+  let mockRateLimiter: IRateLimiter;
   let mockRegisterUseCase: { execute: ReturnType<typeof vi.fn> };
   let mockLoginUseCase: { execute: ReturnType<typeof vi.fn> };
   let mockRefreshUseCase: { execute: ReturnType<typeof vi.fn> };
+  let mockVerifyEmailUseCase: { execute: ReturnType<typeof vi.fn> };
+  let mockRequestPasswordResetUseCase: { execute: ReturnType<typeof vi.fn> };
+  let mockConfirmPasswordResetUseCase: { execute: ReturnType<typeof vi.fn> };
   let deps: AppDependencies;
 
   beforeEach(() => {
@@ -46,17 +51,37 @@ describe('App Factory', () => {
       hashRefreshToken: vi.fn(),
     };
 
+    mockRateLimiter = {
+      check: vi.fn().mockResolvedValue({
+        allowed: true,
+        remaining: 99,
+        retryAfterMs: 0,
+        total: 100,
+        resetAt: new Date(Date.now() + 900000),
+      }),
+      increment: vi.fn().mockResolvedValue(undefined),
+      reset: vi.fn().mockResolvedValue(undefined),
+      cleanup: vi.fn().mockResolvedValue(undefined),
+    };
+
     mockRegisterUseCase = { execute: vi.fn() };
     mockLoginUseCase = { execute: vi.fn() };
     mockRefreshUseCase = { execute: vi.fn() };
+    mockVerifyEmailUseCase = { execute: vi.fn() };
+    mockRequestPasswordResetUseCase = { execute: vi.fn() };
+    mockConfirmPasswordResetUseCase = { execute: vi.fn() };
 
     deps = {
       logger: mockLogger,
       uuidGenerator: mockUuidGenerator,
       tokenService: mockTokenService,
+      rateLimiter: mockRateLimiter,
       registerUserUseCase: mockRegisterUseCase as any,
       loginUserUseCase: mockLoginUseCase as any,
       refreshSessionUseCase: mockRefreshUseCase as any,
+      verifyEmailUseCase: mockVerifyEmailUseCase as any,
+      requestPasswordResetUseCase: mockRequestPasswordResetUseCase as any,
+      confirmPasswordResetUseCase: mockConfirmPasswordResetUseCase as any,
       isProduction: false,
     };
   });

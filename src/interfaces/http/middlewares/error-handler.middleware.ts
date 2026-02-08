@@ -45,6 +45,10 @@ const DOMAIN_ERROR_HTTP_CODES: Record<string, number> = {
   DOMAIN_UNAUTHENTICATED: 401,
   DOMAIN_UNAUTHORIZED: 403,
   DOMAIN_WEAK_PASSWORD: 400,
+
+  // Rate limiting & lockout errors
+  DOMAIN_ACCOUNT_LOCKED: 423,
+  DOMAIN_TOO_MANY_REQUESTS: 429,
 };
 
 /**
@@ -109,6 +113,9 @@ export class ErrorHandlerMiddleware {
   private handleDomainError(error: DomainError): HttpResponse {
     const statusCode = DOMAIN_ERROR_HTTP_CODES[error.code] ?? 400;
 
+    // Extraer retryAfter de errores de lockout/rate limit
+    const retryAfterSeconds = this.extractRetryAfter(error);
+
     return {
       statusCode,
       body: {
@@ -116,13 +123,43 @@ export class ErrorHandlerMiddleware {
         error: {
           code: error.code,
           message: error.message,
+          // Incluir retryAfter para errores de lockout/rate limit
+          ...(retryAfterSeconds !== undefined && { retryAfter: retryAfterSeconds }),
           // Solo incluir detalles en desarrollo
           ...((!this.isProduction && error.context) && {
             details: error.context,
           }),
         },
       },
+      // Incluir Retry-After header para errores 423 y 429
+      ...(retryAfterSeconds !== undefined && {
+        headers: {
+          'Retry-After': String(retryAfterSeconds),
+        },
+      }),
     };
+  }
+
+  /**
+   * Extrae el valor de retryAfter de errores de lockout/rate limit.
+   *
+   * @param error - Error de dominio
+   * @returns Segundos hasta poder reintentar, o undefined
+   *
+   * @private
+   */
+  private extractRetryAfter(error: DomainError): number | undefined {
+    if (error.code === 'DOMAIN_ACCOUNT_LOCKED') {
+      const context = error.context as { remainingSeconds?: number } | undefined;
+      return context?.remainingSeconds;
+    }
+
+    if (error.code === 'DOMAIN_TOO_MANY_REQUESTS') {
+      const context = error.context as { retryAfterSeconds?: number } | undefined;
+      return context?.retryAfterSeconds;
+    }
+
+    return undefined;
   }
 
   /**

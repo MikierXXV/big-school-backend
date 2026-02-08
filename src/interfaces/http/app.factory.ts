@@ -13,11 +13,14 @@ import { HealthController } from './controllers/health.controller.js';
 import { AuthMiddleware } from './middlewares/auth.middleware.js';
 import { ErrorHandlerMiddleware } from './middlewares/error-handler.middleware.js';
 import { RequestContextMiddleware } from './middlewares/request-context.middleware.js';
+import { RateLimitMiddleware } from './middlewares/rate-limit.middleware.js';
+import { RATE_LIMITS } from './config/rate-limits.config.js';
 import {
   adaptRoute,
   createExpressErrorHandler,
   createValidationMiddleware,
   createExpressAuthMiddleware,
+  createExpressRateLimitMiddleware,
 } from './adapters/index.js';
 import {
   validateRegisterRequest,
@@ -36,6 +39,7 @@ import { ConfirmPasswordResetUseCase } from '../../application/use-cases/auth/co
 import { ILogger } from '../../application/ports/logger.port.js';
 import { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 import { ITokenService } from '../../application/ports/token.service.port.js';
+import { IRateLimiter } from '../../application/ports/rate-limiter.port.js';
 
 /**
  * Dependencias requeridas para crear la aplicación.
@@ -44,6 +48,7 @@ export interface AppDependencies {
   logger: ILogger;
   uuidGenerator: IUuidGenerator;
   tokenService: ITokenService;
+  rateLimiter: IRateLimiter;
   registerUserUseCase: RegisterUserUseCase;
   loginUserUseCase: LoginUserUseCase;
   refreshSessionUseCase: RefreshSessionUseCase;
@@ -81,6 +86,20 @@ export function createApp(deps: AppDependencies): Express {
     deps.isProduction ?? false
   );
   const authMiddleware = new AuthMiddleware(deps.tokenService);
+
+  // Create rate limit middlewares
+  const globalRateLimitMiddleware = new RateLimitMiddleware(
+    deps.rateLimiter,
+    RATE_LIMITS.global
+  );
+  const authRateLimitMiddleware = new RateLimitMiddleware(
+    deps.rateLimiter,
+    RATE_LIMITS.auth
+  );
+  const passwordResetRateLimitMiddleware = new RateLimitMiddleware(
+    deps.rateLimiter,
+    RATE_LIMITS.passwordReset
+  );
 
   // Create controllers
   const authController = new AuthController({
@@ -120,32 +139,39 @@ export function createApp(deps: AppDependencies): Express {
     next();
   });
 
-  // Health routes (no auth required)
+  // Global rate limiting (applied to all routes)
+  app.use(createExpressRateLimitMiddleware(globalRateLimitMiddleware));
+
+  // Health routes (no auth required, only global rate limit)
   app.get('/health', adaptRoute(healthController, 'health'));
   app.get('/health/live', adaptRoute(healthController, 'live'));
   app.get('/health/ready', adaptRoute(healthController, 'ready'));
 
-  // Auth routes
+  // Auth routes (with stricter rate limiting)
   app.post(
     '/auth/register',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
     createValidationMiddleware(validateRegisterRequest),
     adaptRoute(authController, 'register')
   );
 
   app.post(
     '/auth/login',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
     createValidationMiddleware(validateLoginRequest),
     adaptRoute(authController, 'login')
   );
 
   app.post(
     '/auth/refresh',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
     createValidationMiddleware(validateRefreshRequest),
     adaptRoute(authController, 'refresh')
   );
 
   app.post(
     '/auth/verify-email',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
     createValidationMiddleware(validateVerifyEmailRequest),
     adaptRoute(authController, 'verifyEmail')
   );
@@ -156,15 +182,17 @@ export function createApp(deps: AppDependencies): Express {
     adaptRoute(authController, 'logout')
   );
 
-  // Password reset routes
+  // Password reset routes (with very strict rate limiting)
   app.post(
     '/auth/password-reset',
+    createExpressRateLimitMiddleware(passwordResetRateLimitMiddleware),
     createValidationMiddleware(validateRequestPasswordResetRequest),
     adaptRoute(authController, 'requestPasswordReset')
   );
 
   app.post(
     '/auth/password-reset/confirm',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
     createValidationMiddleware(validateConfirmPasswordResetRequest),
     adaptRoute(authController, 'confirmPasswordReset')
   );

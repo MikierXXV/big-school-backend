@@ -49,6 +49,11 @@ interface UserRow {
   updated_at: Date;
   last_login_at: Date | null;
   email_verified_at: Date | null;
+  // Lockout fields
+  failed_login_attempts: number;
+  lockout_until: Date | null;
+  lockout_count: number;
+  last_failed_login_at: Date | null;
 }
 
 /**
@@ -78,8 +83,9 @@ export class PostgresUserRepository implements UserRepository {
     const query = `
       INSERT INTO users (
         id, email, password_hash, first_name, last_name,
-        status, created_at, updated_at, last_login_at, email_verified_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        status, created_at, updated_at, last_login_at, email_verified_at,
+        failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `;
 
     await this.pool.query(query, [
@@ -93,6 +99,10 @@ export class PostgresUserRepository implements UserRepository {
       user.updatedAt,
       user.lastLoginAt,
       user.emailVerifiedAt,
+      user.failedLoginAttempts,
+      user.lockoutUntil,
+      user.lockoutCount,
+      user.lastFailedLoginAt,
     ]);
   }
 
@@ -111,7 +121,11 @@ export class PostgresUserRepository implements UserRepository {
         status = $6,
         updated_at = $7,
         last_login_at = $8,
-        email_verified_at = $9
+        email_verified_at = $9,
+        failed_login_attempts = $10,
+        lockout_until = $11,
+        lockout_count = $12,
+        last_failed_login_at = $13
       WHERE id = $1
     `;
 
@@ -125,6 +139,10 @@ export class PostgresUserRepository implements UserRepository {
       user.updatedAt,
       user.lastLoginAt,
       user.emailVerifiedAt,
+      user.failedLoginAttempts,
+      user.lockoutUntil,
+      user.lockoutCount,
+      user.lastFailedLoginAt,
     ]);
 
     if (result.rowCount === 0) {
@@ -156,7 +174,8 @@ export class PostgresUserRepository implements UserRepository {
   public async findById(id: UserId): Promise<User | null> {
     const query = `
       SELECT id, email, password_hash, first_name, last_name,
-             status, created_at, updated_at, last_login_at, email_verified_at
+             status, created_at, updated_at, last_login_at, email_verified_at,
+             failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
       WHERE id = $1
     `;
@@ -180,7 +199,8 @@ export class PostgresUserRepository implements UserRepository {
   public async findByEmail(email: Email): Promise<User | null> {
     const query = `
       SELECT id, email, password_hash, first_name, last_name,
-             status, created_at, updated_at, last_login_at, email_verified_at
+             status, created_at, updated_at, last_login_at, email_verified_at,
+             failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
       WHERE email = $1
     `;
@@ -227,7 +247,8 @@ export class PostgresUserRepository implements UserRepository {
     // Query para datos
     const dataQuery = `
       SELECT id, email, password_hash, first_name, last_name,
-             status, created_at, updated_at, last_login_at, email_verified_at
+             status, created_at, updated_at, last_login_at, email_verified_at,
+             failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
       ORDER BY ${sortColumn} ${order}
       LIMIT $1 OFFSET $2
@@ -275,6 +296,11 @@ export class PostgresUserRepository implements UserRepository {
       updatedAt: row.updated_at,
       lastLoginAt: row.last_login_at,
       emailVerifiedAt: row.email_verified_at,
+      // Lockout fields
+      failedLoginAttempts: row.failed_login_attempts ?? 0,
+      lockoutUntil: row.lockout_until,
+      lockoutCount: row.lockout_count ?? 0,
+      lastFailedLoginAt: row.last_failed_login_at,
     };
 
     return User.fromPersistence(props);
