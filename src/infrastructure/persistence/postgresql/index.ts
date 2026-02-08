@@ -9,3 +9,4 @@
 
 export * from './postgres-user.repository.js';
 export * from './postgres-refresh-token.repository.js';
+export * from './postgres-password-reset-token.repository.js';

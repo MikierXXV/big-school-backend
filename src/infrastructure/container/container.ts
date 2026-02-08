@@ -39,6 +39,12 @@ import { InMemoryUserRepository } from '../persistence/in-memory/in-memory-user.
 import { InMemoryRefreshTokenRepository } from '../persistence/in-memory/in-memory-refresh-token.repository.js';
 import { InMemoryPasswordResetTokenRepository } from '../persistence/in-memory/in-memory-password-reset-token.repository.js';
 
+import { PostgresUserRepository } from '../persistence/postgresql/postgres-user.repository.js';
+import { PostgresRefreshTokenRepository } from '../persistence/postgresql/postgres-refresh-token.repository.js';
+import { PostgresPasswordResetTokenRepository } from '../persistence/postgresql/postgres-password-reset-token.repository.js';
+
+import { getPool } from '../database/index.js';
+
 import { loadEnvironmentConfig, EnvironmentConfig, ServerConfig } from '../config/environment.config.js';
 import { loadJwtConfig, JwtConfig } from '../config/jwt.config.js';
 
@@ -106,11 +112,28 @@ export function createContainer(): AppContainer {
   const tokenService: ITokenService = new JwtTokenService(jwtConfig, dateTimeService);
 
   // ============================================
-  // 3. REPOSITORIES (InMemory for now)
+  // 3. REPOSITORIES (PostgreSQL or InMemory)
   // ============================================
-  const userRepository: UserRepository = new InMemoryUserRepository();
-  const refreshTokenRepository: RefreshTokenRepository = new InMemoryRefreshTokenRepository();
-  const passwordResetTokenRepository: PasswordResetTokenRepository = new InMemoryPasswordResetTokenRepository();
+  const usePostgres = process.env.USE_POSTGRES === 'true';
+
+  let userRepository: UserRepository;
+  let refreshTokenRepository: RefreshTokenRepository;
+  let passwordResetTokenRepository: PasswordResetTokenRepository;
+
+  if (usePostgres) {
+    const pool = getPool();
+    logger.info('Using PostgreSQL repositories');
+
+    userRepository = new PostgresUserRepository(pool);
+    refreshTokenRepository = new PostgresRefreshTokenRepository(pool);
+    passwordResetTokenRepository = new PostgresPasswordResetTokenRepository(pool);
+  } else {
+    logger.info('Using InMemory repositories');
+
+    userRepository = new InMemoryUserRepository();
+    refreshTokenRepository = new InMemoryRefreshTokenRepository();
+    passwordResetTokenRepository = new InMemoryPasswordResetTokenRepository();
+  }
 
   // ============================================
   // 4. USE CASES

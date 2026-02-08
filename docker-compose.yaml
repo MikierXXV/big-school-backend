@@ -1,0 +1,76 @@
+# ─────────────────────────────────────────────────────────────
+# Docker Compose - Big School Backend Development Environment
+# ─────────────────────────────────────────────────────────────
+version: "3.9"
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: big_school_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: big_school
+      POSTGRES_USER: big_school_user
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-local_dev_password_123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U big_school_user -d big_school"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - big_school_network
+
+  # ─────────────────────────────────────────────────────────────
+  # Backend Application (Development)
+  # ─────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: big_school_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOST: "0.0.0.0"
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: big_school
+      DATABASE_USER: big_school_user
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-local_dev_password_123}
+      DATABASE_SSL: "false"
+      DATABASE_URL: postgresql://big_school_user:${DATABASE_PASSWORD:-local_dev_password_123}@postgres:5432/big_school
+      USE_POSTGRES: "true"
+      # JWT Secrets (use environment variables for real secrets)
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_access_secret_min_32_characters_here_ok}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_min_32_characters_here_ok}
+      JWT_PASSWORD_RESET_SECRET: ${JWT_PASSWORD_RESET_SECRET:-dev_reset_secret_min_32_characters_here_ok}
+      # Hashing
+      HASH_SALT_ROUNDS: 12
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload (read-only for safety)
+      - ./backend/src:/app/src:ro
+      - ./backend/migrations:/app/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - big_school_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  big_school_network:
+    driver: bridge
