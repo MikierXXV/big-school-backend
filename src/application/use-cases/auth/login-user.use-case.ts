@@ -33,7 +33,10 @@ import { UserStatus } from '../../../domain/entities/user.entity.js';
 import { Email } from '../../../domain/value-objects/email.value-object.js';
 import { AccessToken } from '../../../domain/value-objects/access-token.value-object.js';
 import { RefreshToken } from '../../../domain/value-objects/refresh-token.value-object.js';
-import { InvalidCredentialsError } from '../../../domain/errors/authentication.errors.js';
+import {
+  InvalidCredentialsError,
+  AccountLockedError,
+} from '../../../domain/errors/authentication.errors.js';
 import { UserNotActiveError } from '../../../domain/errors/user.errors.js';
 import { ITokenService } from '../../ports/token.service.port.js';
 import { IHashingService } from '../../ports/hashing.service.port.js';
@@ -104,18 +107,38 @@ export class LoginUserUseCase {
       throw new InvalidCredentialsError();
     }
 
-    // 5. Verificar contraseña primero (antes de verificar estado)
+    // 5. Check if account is locked out
+    const now = this.deps.dateTimeService.now();
+    if (user.isLockedOut(now)) {
+      const remainingSeconds = user.getRemainingLockoutSeconds(now);
+      this.deps.logger.warn('Login failed: account locked', {
+        userId: user.id.value,
+        remainingSeconds,
+        lockoutCount: user.lockoutCount,
+      });
+      throw new AccountLockedError(remainingSeconds);
+    }
+
+    // 6. Verificar contraseña
     const isPasswordValid = await this.deps.hashingService.verify(
       request.password,
       user.passwordHash
     );
 
     if (!isPasswordValid) {
-      this.deps.logger.warn('Login failed: invalid password', { userId: user.id.value });
+      // Record failed login attempt and potentially lock the account
+      const updatedUser = user.recordFailedLogin(now);
+      await this.deps.userRepository.update(updatedUser);
+
+      this.deps.logger.warn('Login failed: invalid password', {
+        userId: user.id.value,
+        failedAttempts: updatedUser.failedLoginAttempts,
+        isNowLocked: updatedUser.isLockedOut(now),
+      });
       throw new InvalidCredentialsError();
     }
 
-    // 6. Verificar que el usuario puede hacer login
+    // 7. Verificar que el usuario puede hacer login
     if (!user.canLogin()) {
       // Si está pendiente de verificación, lanzamos error genérico para no revelar estado
       if (user.status === UserStatus.PENDING_VERIFICATION) {
@@ -143,9 +166,9 @@ export class LoginUserUseCase {
     // 9. Almacenar refresh token en BD
     await this.deps.refreshTokenRepository.save(refreshToken);
 
-    // 10. Actualizar lastLoginAt
-    const now = this.deps.dateTimeService.now();
-    const updatedUser = user.recordLogin(now);
+    // 10. Record successful login (resets lockout counters and updates lastLoginAt)
+    const loginTime = this.deps.dateTimeService.now();
+    const updatedUser = user.recordSuccessfulLogin(loginTime);
     await this.deps.userRepository.update(updatedUser);
 
     // 11. Log éxito

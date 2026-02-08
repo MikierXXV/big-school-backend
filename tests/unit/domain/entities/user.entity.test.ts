@@ -362,4 +362,430 @@ describe('User Entity', () => {
       expect(user.domainEvents).toEqual([]);
     });
   });
+
+  // ============================================
+  // ACCOUNT LOCKOUT TESTS
+  // ============================================
+
+  describe('Account Lockout', () => {
+    describe('Initial State', () => {
+      it('should initialize with zero failed attempts', () => {
+        const user = User.create(validUserData);
+
+        expect(user.failedLoginAttempts).toBe(0);
+      });
+
+      it('should initialize with null lockoutUntil', () => {
+        const user = User.create(validUserData);
+
+        expect(user.lockoutUntil).toBeNull();
+      });
+
+      it('should initialize with zero lockout count', () => {
+        const user = User.create(validUserData);
+
+        expect(user.lockoutCount).toBe(0);
+      });
+
+      it('should initialize with null lastFailedLoginAt', () => {
+        const user = User.create(validUserData);
+
+        expect(user.lastFailedLoginAt).toBeNull();
+      });
+    });
+
+    describe('isLockedOut()', () => {
+      it('should return false when lockoutUntil is null', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        expect(user.isLockedOut(now)).toBe(false);
+      });
+
+      it('should return true when lockoutUntil is in the future', () => {
+        const now = new Date();
+        const futureDate = new Date(now.getTime() + 60000); // 1 minute in future
+        const props = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: null,
+          emailVerifiedAt: new Date(),
+          failedLoginAttempts: 5,
+          lockoutUntil: futureDate,
+          lockoutCount: 1,
+          lastFailedLoginAt: now,
+        };
+        const user = User.fromPersistence(props);
+
+        expect(user.isLockedOut(now)).toBe(true);
+      });
+
+      it('should return false when lockoutUntil is in the past', () => {
+        const now = new Date();
+        const pastDate = new Date(now.getTime() - 60000); // 1 minute ago
+        const props = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: null,
+          emailVerifiedAt: new Date(),
+          failedLoginAttempts: 5,
+          lockoutUntil: pastDate,
+          lockoutCount: 1,
+          lastFailedLoginAt: now,
+        };
+        const user = User.fromPersistence(props);
+
+        expect(user.isLockedOut(now)).toBe(false);
+      });
+    });
+
+    describe('getRemainingLockoutSeconds()', () => {
+      it('should return 0 when not locked', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        expect(user.getRemainingLockoutSeconds(now)).toBe(0);
+      });
+
+      it('should return remaining seconds when locked', () => {
+        const now = new Date();
+        const lockoutUntil = new Date(now.getTime() + 120000); // 2 minutes
+        const props = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: null,
+          emailVerifiedAt: new Date(),
+          failedLoginAttempts: 5,
+          lockoutUntil,
+          lockoutCount: 1,
+          lastFailedLoginAt: now,
+        };
+        const user = User.fromPersistence(props);
+
+        const remaining = user.getRemainingLockoutSeconds(now);
+        expect(remaining).toBe(120);
+      });
+
+      it('should return 0 when lockout has expired', () => {
+        const now = new Date();
+        const pastDate = new Date(now.getTime() - 60000);
+        const props = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: null,
+          emailVerifiedAt: new Date(),
+          failedLoginAttempts: 5,
+          lockoutUntil: pastDate,
+          lockoutCount: 1,
+          lastFailedLoginAt: now,
+        };
+        const user = User.fromPersistence(props);
+
+        expect(user.getRemainingLockoutSeconds(now)).toBe(0);
+      });
+    });
+
+    describe('recordFailedLogin()', () => {
+      it('should increment failedLoginAttempts', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        const updatedUser = user.recordFailedLogin(now);
+
+        expect(updatedUser.failedLoginAttempts).toBe(1);
+      });
+
+      it('should set lastFailedLoginAt', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        const updatedUser = user.recordFailedLogin(now);
+
+        expect(updatedUser.lastFailedLoginAt?.getTime()).toBe(now.getTime());
+      });
+
+      it('should not lock account before MAX_FAILED_ATTEMPTS', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        // Make 4 failed attempts (less than MAX_FAILED_ATTEMPTS of 5)
+        for (let i = 0; i < 4; i++) {
+          user = user.recordFailedLogin(now);
+        }
+
+        expect(user.failedLoginAttempts).toBe(4);
+        expect(user.lockoutUntil).toBeNull();
+        expect(user.lockoutCount).toBe(0);
+      });
+
+      it('should lock account after MAX_FAILED_ATTEMPTS', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        // Make 5 failed attempts (equals MAX_FAILED_ATTEMPTS)
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+
+        expect(user.failedLoginAttempts).toBe(5);
+        expect(user.lockoutUntil).not.toBeNull();
+        expect(user.lockoutCount).toBe(1);
+        expect(user.isLockedOut(now)).toBe(true);
+      });
+
+      it('should set lockout duration to BASE_LOCKOUT_DURATION_MS for first lockout', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+
+        const expectedLockoutEnd = now.getTime() + User.BASE_LOCKOUT_DURATION_MS;
+        expect(user.lockoutUntil?.getTime()).toBe(expectedLockoutEnd);
+      });
+
+      it('should return a new instance (immutability)', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        const updatedUser = user.recordFailedLogin(now);
+
+        expect(updatedUser).not.toBe(user);
+        expect(user.failedLoginAttempts).toBe(0);
+      });
+    });
+
+    describe('recordSuccessfulLogin()', () => {
+      it('should reset failedLoginAttempts to 0', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        // Make some failed attempts
+        user = user.recordFailedLogin(now);
+        user = user.recordFailedLogin(now);
+        expect(user.failedLoginAttempts).toBe(2);
+
+        // Successful login
+        const successUser = user.recordSuccessfulLogin(now);
+
+        expect(successUser.failedLoginAttempts).toBe(0);
+      });
+
+      it('should clear lockoutUntil', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        // Trigger lockout
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+        expect(user.lockoutUntil).not.toBeNull();
+
+        // Wait for lockout to expire (simulate)
+        const later = new Date(now.getTime() + User.BASE_LOCKOUT_DURATION_MS + 1000);
+        const successUser = user.recordSuccessfulLogin(later);
+
+        expect(successUser.lockoutUntil).toBeNull();
+      });
+
+      it('should reset lockoutCount to 0', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        // Trigger lockout
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+        expect(user.lockoutCount).toBe(1);
+
+        const successUser = user.recordSuccessfulLogin(now);
+
+        expect(successUser.lockoutCount).toBe(0);
+      });
+
+      it('should clear lastFailedLoginAt', () => {
+        let user = User.create(validUserData);
+        const now = new Date();
+
+        user = user.recordFailedLogin(now);
+        expect(user.lastFailedLoginAt).not.toBeNull();
+
+        const successUser = user.recordSuccessfulLogin(now);
+
+        expect(successUser.lastFailedLoginAt).toBeNull();
+      });
+
+      it('should update lastLoginAt', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        const successUser = user.recordSuccessfulLogin(now);
+
+        expect(successUser.lastLoginAt?.getTime()).toBe(now.getTime());
+      });
+    });
+
+    describe('Progressive Lockout', () => {
+      it('should increase lockout duration for repeated lockouts', () => {
+        const now = new Date();
+
+        // First lockout cycle
+        let user = User.create(validUserData);
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+        expect(user.lockoutCount).toBe(1);
+        const firstLockoutDuration = user.lockoutUntil!.getTime() - now.getTime();
+        expect(firstLockoutDuration).toBe(User.BASE_LOCKOUT_DURATION_MS);
+
+        // Simulate lockout expiring and user logging in successfully
+        const afterFirstLockout = new Date(now.getTime() + User.BASE_LOCKOUT_DURATION_MS + 1000);
+
+        // But they fail to login, simulating they forgot again
+        // Create a user with lockoutCount = 1 but lockout expired
+        const propsAfterFirstLockout = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: afterFirstLockout,
+          lastLoginAt: null,
+          emailVerifiedAt: new Date(),
+          failedLoginAttempts: 0,
+          lockoutUntil: null,
+          lockoutCount: 1, // Keep previous lockout count
+          lastFailedLoginAt: null,
+        };
+        let userSecondCycle = User.fromPersistence(propsAfterFirstLockout);
+
+        // Second lockout cycle
+        for (let i = 0; i < 5; i++) {
+          userSecondCycle = userSecondCycle.recordFailedLogin(afterFirstLockout);
+        }
+
+        expect(userSecondCycle.lockoutCount).toBe(2);
+        const secondLockoutDuration = userSecondCycle.lockoutUntil!.getTime() - afterFirstLockout.getTime();
+        expect(secondLockoutDuration).toBe(User.BASE_LOCKOUT_DURATION_MS * 2);
+      });
+
+      it('should cap lockout duration at MAX_LOCKOUT_DURATION_MS', () => {
+        const now = new Date();
+
+        // Create user with high lockout count
+        const props = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          createdAt: new Date(),
+          updatedAt: now,
+          lastLoginAt: null,
+          emailVerifiedAt: new Date(),
+          failedLoginAttempts: 0,
+          lockoutUntil: null,
+          lockoutCount: 10, // High lockout count
+          lastFailedLoginAt: null,
+        };
+        let user = User.fromPersistence(props);
+
+        // Trigger another lockout
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+
+        const lockoutDuration = user.lockoutUntil!.getTime() - now.getTime();
+        expect(lockoutDuration).toBe(User.MAX_LOCKOUT_DURATION_MS);
+      });
+    });
+
+    describe('canAttemptLogin()', () => {
+      it('should return true for ACTIVE user not locked out', () => {
+        const user = User.create(validUserData).verifyEmail(new Date());
+        const now = new Date();
+
+        expect(user.canAttemptLogin(now)).toBe(true);
+      });
+
+      it('should return true for PENDING_VERIFICATION user', () => {
+        const user = User.create(validUserData);
+        const now = new Date();
+
+        expect(user.canAttemptLogin(now)).toBe(true);
+      });
+
+      it('should return false when locked out', () => {
+        let user = User.create(validUserData).verifyEmail(new Date());
+        const now = new Date();
+
+        // Trigger lockout
+        for (let i = 0; i < 5; i++) {
+          user = user.recordFailedLogin(now);
+        }
+
+        expect(user.canAttemptLogin(now)).toBe(false);
+      });
+
+      it('should return false for SUSPENDED user', () => {
+        const user = User.create(validUserData)
+          .verifyEmail(new Date())
+          .suspend(new Date());
+        const now = new Date();
+
+        expect(user.canAttemptLogin(now)).toBe(false);
+      });
+
+      it('should return false for DEACTIVATED user', () => {
+        const props = {
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.DEACTIVATED,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: null,
+          emailVerifiedAt: null,
+          failedLoginAttempts: 0,
+          lockoutUntil: null,
+          lockoutCount: 0,
+          lastFailedLoginAt: null,
+        };
+        const user = User.fromPersistence(props);
+        const now = new Date();
+
+        expect(user.canAttemptLogin(now)).toBe(false);
+      });
+    });
+  });
 });

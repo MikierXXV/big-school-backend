@@ -49,6 +49,17 @@ describe('DI Container', () => {
       expect(container.loginUserUseCase).toBeDefined();
       expect(container.refreshSessionUseCase).toBeDefined();
       expect(container.verifyEmailUseCase).toBeDefined();
+      expect(container.rateLimiter).toBeDefined();
+    });
+
+    it('should create rateLimiter that implements IRateLimiter', () => {
+      const container = createContainer();
+      const rateLimiter = container.rateLimiter;
+
+      expect(typeof rateLimiter.check).toBe('function');
+      expect(typeof rateLimiter.increment).toBe('function');
+      expect(typeof rateLimiter.reset).toBe('function');
+      expect(typeof rateLimiter.cleanup).toBe('function');
     });
 
     it('should create logger that implements ILogger', () => {

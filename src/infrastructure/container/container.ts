@@ -18,6 +18,7 @@ import { IDateTimeService } from '../../application/ports/datetime.service.port.
 import { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 import { IHashingService } from '../../application/ports/hashing.service.port.js';
 import { ITokenService } from '../../application/ports/token.service.port.js';
+import { IRateLimiter } from '../../application/ports/rate-limiter.port.js';
 import { UserRepository } from '../../domain/repositories/user.repository.interface.js';
 import { RefreshTokenRepository } from '../../domain/repositories/refresh-token.repository.interface.js';
 import { PasswordResetTokenRepository } from '../../domain/repositories/password-reset-token.repository.interface.js';
@@ -34,6 +35,7 @@ import { SystemDateTimeService } from '../services/system-datetime.service.js';
 import { CryptoUuidGenerator } from '../services/crypto-uuid-generator.service.js';
 import { BcryptHashingService } from '../services/bcrypt-hashing.service.js';
 import { JwtTokenService } from '../services/jwt-token.service.js';
+import { InMemoryRateLimiter } from '../services/in-memory-rate-limiter.service.js';
 
 import { InMemoryUserRepository } from '../persistence/in-memory/in-memory-user.repository.js';
 import { InMemoryRefreshTokenRepository } from '../persistence/in-memory/in-memory-refresh-token.repository.js';
@@ -66,6 +68,7 @@ export interface AppContainer {
   readonly uuidGenerator: IUuidGenerator;
   readonly hashingService: IHashingService;
   readonly tokenService: ITokenService;
+  readonly rateLimiter: IRateLimiter;
 
   // Repositories
   readonly userRepository: UserRepository;
@@ -110,6 +113,7 @@ export function createContainer(): AppContainer {
   const uuidGenerator: IUuidGenerator = new CryptoUuidGenerator();
   const hashingService: IHashingService = new BcryptHashingService({ saltRounds });
   const tokenService: ITokenService = new JwtTokenService(jwtConfig, dateTimeService);
+  const rateLimiter: IRateLimiter = new InMemoryRateLimiter();
 
   // ============================================
   // 3. REPOSITORIES (PostgreSQL or InMemory)
@@ -203,6 +207,7 @@ export function createContainer(): AppContainer {
     uuidGenerator,
     hashingService,
     tokenService,
+    rateLimiter,
 
     // Repositories
     userRepository,

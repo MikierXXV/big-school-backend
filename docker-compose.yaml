@@ -32,7 +32,7 @@ services:
   # ─────────────────────────────────────────────────────────────
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile.dev
     container_name: big_school_backend
     restart: unless-stopped
@@ -55,12 +55,15 @@ services:
       JWT_PASSWORD_RESET_SECRET: ${JWT_PASSWORD_RESET_SECRET:-dev_reset_secret_min_32_characters_here_ok}
       # Hashing
       HASH_SALT_ROUNDS: 12
+      # Rate limiting - Using production values
+      # Auth: 5 requests per minute per IP
+      # Global: 100 requests per 15 minutes per IP
     ports:
       - "3000:3000"
     volumes:
       # Mount source code for hot reload (read-only for safety)
-      - ./backend/src:/app/src:ro
-      - ./backend/migrations:/app/migrations:ro
+      - ./src:/app/src:ro
+      - ./migrations:/app/migrations:ro
     depends_on:
       postgres:
         condition: service_healthy
