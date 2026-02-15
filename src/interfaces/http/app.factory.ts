@@ -15,6 +15,7 @@ import { ErrorHandlerMiddleware } from './middlewares/error-handler.middleware.j
 import { RequestContextMiddleware } from './middlewares/request-context.middleware.js';
 import { RateLimitMiddleware } from './middlewares/rate-limit.middleware.js';
 import { RATE_LIMITS } from './config/rate-limits.config.js';
+import cors from 'cors';
 import {
   adaptRoute,
   createExpressErrorHandler,
@@ -75,6 +76,13 @@ interface RequestWithContext extends Request {
  */
 export function createApp(deps: AppDependencies): Express {
   const app = express();
+
+  app.use(cors({
+    origin: ['*'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
 
   // Create middleware instances
   const requestContextMiddleware = new RequestContextMiddleware(

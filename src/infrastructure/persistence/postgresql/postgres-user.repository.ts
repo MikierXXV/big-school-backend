@@ -292,15 +292,15 @@ export class PostgresUserRepository implements UserRepository {
       firstName: row.first_name,
       lastName: row.last_name,
       status: row.status as UserStatus,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      lastLoginAt: row.last_login_at,
-      emailVerifiedAt: row.email_verified_at,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+      lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
+      emailVerifiedAt: row.email_verified_at ? new Date(row.email_verified_at) : null,
       // Lockout fields
       failedLoginAttempts: row.failed_login_attempts ?? 0,
-      lockoutUntil: row.lockout_until,
+      lockoutUntil: row.lockout_until ? new Date(row.lockout_until) : null,
       lockoutCount: row.lockout_count ?? 0,
-      lastFailedLoginAt: row.last_failed_login_at,
+      lastFailedLoginAt: row.last_failed_login_at ? new Date(row.last_failed_login_at) : null,
     };
 
     return User.fromPersistence(props);
