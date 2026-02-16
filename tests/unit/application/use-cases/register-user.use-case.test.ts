@@ -99,6 +99,7 @@ describe('RegisterUser Use Case', () => {
       differenceInSeconds: vi.fn().mockReturnValue(0),
       toISOString: vi.fn().mockImplementation((d) => d.toISOString()),
       fromISOString: vi.fn().mockImplementation((s) => new Date(s)),
+      toLocalString: vi.fn().mockImplementation((d) => (d ?? FIXED_DATE).toISOString()),
     };
 
     mockTokenService = {

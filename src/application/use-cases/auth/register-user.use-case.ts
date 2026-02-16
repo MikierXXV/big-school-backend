@@ -158,7 +158,7 @@ export class RegisterUserUseCase {
         email: user.email.value,
         fullName: user.fullName,
         status: user.status,
-        createdAt: user.createdAt.toISOString(),
+        createdAt: this.deps.dateTimeService.toLocalString(user.createdAt),
         requiresEmailVerification: true,
         // Solo incluir token en desarrollo
         ...(this.deps.isProduction ? {} : { verificationToken: verificationToken.value }),

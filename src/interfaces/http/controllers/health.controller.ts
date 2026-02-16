@@ -75,7 +75,7 @@ export class HealthController {
         success: true,
         data: {
           status: 'ok',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }).replace(' ', 'T'),
           version: this.version,
           uptime: this.getUptimeSeconds(),
         },
@@ -121,7 +121,7 @@ export class HealthController {
         success: true,
         data: {
           status: 'ok',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }).replace(' ', 'T'),
           checks: {
             database: { status: 'ok', message: 'Not implemented' },
           },
@@ -145,7 +145,7 @@ export class HealthController {
         success: true,
         data: {
           status: 'ok',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }).replace(' ', 'T'),
         },
       },
     };

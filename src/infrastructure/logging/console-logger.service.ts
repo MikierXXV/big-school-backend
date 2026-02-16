@@ -24,6 +24,37 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
+const TIMEZONE = 'Europe/Madrid';
+
+/**
+ * Formats a Date to ISO 8601 string in Europe/Madrid timezone.
+ */
+function formatLocalTimestamp(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    fractionalSecondDigits: 3,
+  }).formatToParts(date);
+
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '00';
+
+  const localDate = new Date(date.toLocaleString('en-US', { timeZone: TIMEZONE }));
+  const offsetMs = localDate.getTime() - date.getTime();
+  const offsetMin = Math.round(offsetMs / 60000);
+  const sign = offsetMin >= 0 ? '+' : '-';
+  const absMin = Math.abs(offsetMin);
+  const oh = String(Math.floor(absMin / 60)).padStart(2, '0');
+  const om = String(absMin % 60).padStart(2, '0');
+
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}.${get('fractionalSecond')}${sign}${oh}:${om}`;
+}
+
 /**
  * Implementación de ILogger usando console.
  */
@@ -115,7 +146,7 @@ export class ConsoleLogger implements ILogger {
       return;
     }
 
-    const timestamp = new Date().toISOString();
+    const timestamp = formatLocalTimestamp(new Date());
     const combinedContext = { ...this.baseContext, ...context };
 
     const logEntry = {
