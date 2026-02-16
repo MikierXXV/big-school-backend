@@ -208,7 +208,7 @@ export class RefreshSessionUseCase {
         accessToken: newAccessToken.value,
         tokenType: 'Bearer',
         expiresIn: AccessToken.VALIDITY_SECONDS,
-        expiresAt: newAccessToken.expiresAt.toISOString(),
+        expiresAt: this.deps.dateTimeService.toLocalString(newAccessToken.expiresAt),
         refreshToken: newRefreshToken.value,
         refreshExpiresIn: RefreshToken.VALIDITY_SECONDS,
       },

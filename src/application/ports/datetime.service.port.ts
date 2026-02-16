@@ -135,6 +135,15 @@ export interface IDateTimeService {
    * TODO: Implementar en SystemDateTimeService
    */
   fromISOString(isoString: string): Date | null;
+
+  /**
+   * Formatea una fecha en la zona horaria local configurada.
+   * Formato: "2026-02-16T15:30:45.000+01:00"
+   *
+   * @param date - Fecha a formatear (opcional, usa now() si no se proporciona)
+   * @returns String con la fecha en zona horaria local
+   */
+  toLocalString(date?: Date): string;
 }
 
 /**
