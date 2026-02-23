@@ -12,6 +12,7 @@ import { User, UserStatus, CreateUserData } from '../../../../src/domain/entitie
 import { UserId } from '../../../../src/domain/value-objects/user-id.value-object.js';
 import { Email } from '../../../../src/domain/value-objects/email.value-object.js';
 import { PasswordHash } from '../../../../src/domain/value-objects/password-hash.value-object.js';
+import { SystemRole } from '../../../../src/domain/value-objects/system-role.value-object.js';
 
 describe('User Entity', () => {
   // Datos de prueba válidos
@@ -106,10 +107,15 @@ describe('User Entity', () => {
         firstName: 'John',
         lastName: 'Doe',
         status: UserStatus.DEACTIVATED,
+        systemRole: SystemRole.USER(),
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLoginAt: null,
         emailVerifiedAt: null,
+        failedLoginAttempts: 0,
+        lockoutUntil: null,
+        lockoutCount: 0,
+        lastFailedLoginAt: null,
       };
       const user = User.fromPersistence(props);
 
@@ -333,10 +339,15 @@ describe('User Entity', () => {
         firstName: 'John',
         lastName: 'Doe',
         status: UserStatus.ACTIVE,
+        systemRole: SystemRole.USER(),
         createdAt: new Date('2024-01-01T00:00:00Z'),
         updatedAt: new Date('2024-01-15T00:00:00Z'),
         lastLoginAt: new Date('2024-01-14T00:00:00Z'),
         emailVerifiedAt: new Date('2024-01-02T00:00:00Z'),
+        failedLoginAttempts: 0,
+        lockoutUntil: null,
+        lockoutCount: 0,
+        lastFailedLoginAt: null,
       };
 
       const user = User.fromPersistence(props);
@@ -412,6 +423,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: new Date(),
           lastLoginAt: null,
@@ -436,6 +448,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: new Date(),
           lastLoginAt: null,
@@ -469,6 +482,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: new Date(),
           lastLoginAt: null,
@@ -494,6 +508,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: new Date(),
           lastLoginAt: null,
@@ -675,6 +690,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: afterFirstLockout,
           lastLoginAt: null,
@@ -707,6 +723,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: now,
           lastLoginAt: null,
@@ -772,6 +789,7 @@ describe('User Entity', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.DEACTIVATED,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: new Date(),
           lastLoginAt: null,
@@ -785,6 +803,139 @@ describe('User Entity', () => {
         const now = new Date();
 
         expect(user.canAttemptLogin(now)).toBe(false);
+      });
+    });
+  });
+
+  describe('System Role', () => {
+    describe('create() with systemRole', () => {
+      it('should create user with USER role by default', () => {
+        const user = User.create(validUserData);
+
+        expect(user.systemRole).toBeInstanceOf(SystemRole);
+        expect(user.systemRole.getValue()).toBe('user');
+        expect(user.isUser()).toBe(true);
+      });
+
+      it('should create user with specified SUPER_ADMIN role', () => {
+        const data: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.SUPER_ADMIN(),
+        };
+        const user = User.create(data);
+
+        expect(user.systemRole.getValue()).toBe('super_admin');
+        expect(user.isSuperAdmin()).toBe(true);
+      });
+
+      it('should create user with specified ADMIN role', () => {
+        const data: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.ADMIN(),
+        };
+        const user = User.create(data);
+
+        expect(user.systemRole.getValue()).toBe('admin');
+        expect(user.isAdmin()).toBe(true);
+      });
+    });
+
+    describe('systemRole getter', () => {
+      it('should return systemRole value object', () => {
+        const user = User.create(validUserData);
+
+        expect(user.systemRole).toBeInstanceOf(SystemRole);
+      });
+    });
+
+    describe('isSuperAdmin()', () => {
+      it('should return true for SUPER_ADMIN user', () => {
+        const data: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.SUPER_ADMIN(),
+        };
+        const user = User.create(data);
+
+        expect(user.isSuperAdmin()).toBe(true);
+        expect(user.isAdmin()).toBe(false);
+        expect(user.isUser()).toBe(false);
+      });
+
+      it('should return false for non-SUPER_ADMIN users', () => {
+        const regularUser = User.create(validUserData);
+        const adminData: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.ADMIN(),
+        };
+        const adminUser = User.create(adminData);
+
+        expect(regularUser.isSuperAdmin()).toBe(false);
+        expect(adminUser.isSuperAdmin()).toBe(false);
+      });
+    });
+
+    describe('isAdmin()', () => {
+      it('should return true for ADMIN user', () => {
+        const data: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.ADMIN(),
+        };
+        const user = User.create(data);
+
+        expect(user.isAdmin()).toBe(true);
+        expect(user.isSuperAdmin()).toBe(false);
+        expect(user.isUser()).toBe(false);
+      });
+
+      it('should return false for non-ADMIN users', () => {
+        const regularUser = User.create(validUserData);
+        const superAdminData: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.SUPER_ADMIN(),
+        };
+        const superAdminUser = User.create(superAdminData);
+
+        expect(regularUser.isAdmin()).toBe(false);
+        expect(superAdminUser.isAdmin()).toBe(false);
+      });
+    });
+
+    describe('isUser()', () => {
+      it('should return true for USER role', () => {
+        const user = User.create(validUserData);
+
+        expect(user.isUser()).toBe(true);
+        expect(user.isAdmin()).toBe(false);
+        expect(user.isSuperAdmin()).toBe(false);
+      });
+
+      it('should return false for non-USER roles', () => {
+        const adminData: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.ADMIN(),
+        };
+        const superAdminData: CreateUserData = {
+          ...validUserData,
+          systemRole: SystemRole.SUPER_ADMIN(),
+        };
+        const adminUser = User.create(adminData);
+        const superAdminUser = User.create(superAdminData);
+
+        expect(adminUser.isUser()).toBe(false);
+        expect(superAdminUser.isUser()).toBe(false);
+      });
+    });
+
+    describe('systemRole immutability', () => {
+      it('should not allow systemRole to change after creation', () => {
+        const user = User.create(validUserData);
+
+        // systemRole is immutable - there's no method to change it
+        expect(user.systemRole.getValue()).toBe('user');
+
+        // Verify that operations don't change systemRole
+        const verifiedUser = user.verifyEmail(new Date());
+        expect(verifiedUser.systemRole.getValue()).toBe('user');
       });
     });
   });
