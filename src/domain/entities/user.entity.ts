@@ -436,6 +436,24 @@ export class User {
     return new User(newProps);
   }
 
+  /**
+   * Changes the user's system role.
+   * Feature 012: RBAC + Organizations
+   *
+   * @param newRole - New system role
+   * @param updatedAt - Date of role change
+   * @returns Nueva instancia con rol actualizado
+   */
+  public changeSystemRole(newRole: SystemRole, updatedAt: Date): User {
+    const newProps: UserProps = {
+      ...this._props,
+      systemRole: newRole,
+      updatedAt,
+    };
+
+    return new User(newProps);
+  }
+
   // ============================================
   // ACCOUNT LOCKOUT METHODS
   // ============================================
