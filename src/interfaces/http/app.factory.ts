@@ -15,6 +15,7 @@ import { ErrorHandlerMiddleware } from './middlewares/error-handler.middleware.j
 import { RequestContextMiddleware } from './middlewares/request-context.middleware.js';
 import { RateLimitMiddleware } from './middlewares/rate-limit.middleware.js';
 import { RATE_LIMITS } from './config/rate-limits.config.js';
+import { createRBACRoutes } from './routes/rbac.routes.js';
 import cors from 'cors';
 import {
   adaptRoute,
@@ -41,6 +42,10 @@ import { ILogger } from '../../application/ports/logger.port.js';
 import { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 import { ITokenService } from '../../application/ports/token.service.port.js';
 import { IRateLimiter } from '../../application/ports/rate-limiter.port.js';
+import { AdminController } from './controllers/admin.controller.js';
+import { OrganizationController } from './controllers/organization.controller.js';
+import { OrganizationMembershipController } from './controllers/organization-membership.controller.js';
+import { AuthorizationMiddleware } from './middlewares/authorization.middleware.js';
 
 /**
  * Dependencias requeridas para crear la aplicación.
@@ -56,6 +61,10 @@ export interface AppDependencies {
   verifyEmailUseCase: VerifyEmailUseCase;
   requestPasswordResetUseCase: RequestPasswordResetUseCase;
   confirmPasswordResetUseCase: ConfirmPasswordResetUseCase;
+  adminController: AdminController;
+  organizationController: OrganizationController;
+  organizationMembershipController: OrganizationMembershipController;
+  authorizationMiddleware: AuthorizationMiddleware;
   isProduction?: boolean;
   version?: string;
 }
@@ -204,6 +213,17 @@ export function createApp(deps: AppDependencies): Express {
     createValidationMiddleware(validateConfirmPasswordResetRequest),
     adaptRoute(authController, 'confirmPasswordReset')
   );
+
+  // ============================================
+  // RBAC Routes (Feature 012)
+  // ============================================
+  const rbacRoutes = createRBACRoutes(
+    deps.adminController,
+    deps.organizationController,
+    deps.organizationMembershipController,
+    deps.authorizationMiddleware
+  );
+  app.use('/api', rbacRoutes);
 
   // 404 handler
   app.use((_req: Request, res: Response) => {

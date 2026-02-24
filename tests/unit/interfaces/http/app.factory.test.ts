@@ -25,6 +25,10 @@ describe('App Factory', () => {
   let mockVerifyEmailUseCase: { execute: ReturnType<typeof vi.fn> };
   let mockRequestPasswordResetUseCase: { execute: ReturnType<typeof vi.fn> };
   let mockConfirmPasswordResetUseCase: { execute: ReturnType<typeof vi.fn> };
+  let mockAdminController: any;
+  let mockOrganizationController: any;
+  let mockOrganizationMembershipController: any;
+  let mockAuthorizationMiddleware: any;
   let deps: AppDependencies;
 
   beforeEach(() => {
@@ -71,6 +75,34 @@ describe('App Factory', () => {
     mockRequestPasswordResetUseCase = { execute: vi.fn() };
     mockConfirmPasswordResetUseCase = { execute: vi.fn() };
 
+    mockAdminController = {
+      promote: vi.fn(),
+      demote: vi.fn(),
+      grantPermission: vi.fn(),
+      revokePermission: vi.fn(),
+      getPermissions: vi.fn(),
+    };
+
+    mockOrganizationController = {
+      create: vi.fn(),
+      getById: vi.fn(),
+      list: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    mockOrganizationMembershipController = {
+      assign: vi.fn(),
+      remove: vi.fn(),
+      changeRole: vi.fn(),
+      getMembers: vi.fn(),
+      getUserOrganizations: vi.fn(),
+    };
+
+    mockAuthorizationMiddleware = {
+      checkPermission: vi.fn().mockReturnValue(vi.fn()),
+    };
+
     deps = {
       logger: mockLogger,
       uuidGenerator: mockUuidGenerator,
@@ -82,6 +114,10 @@ describe('App Factory', () => {
       verifyEmailUseCase: mockVerifyEmailUseCase as any,
       requestPasswordResetUseCase: mockRequestPasswordResetUseCase as any,
       confirmPasswordResetUseCase: mockConfirmPasswordResetUseCase as any,
+      adminController: mockAdminController,
+      organizationController: mockOrganizationController,
+      organizationMembershipController: mockOrganizationMembershipController,
+      authorizationMiddleware: mockAuthorizationMiddleware,
       isProduction: false,
     };
   });

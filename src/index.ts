@@ -61,6 +61,10 @@ async function main(): Promise<void> {
     verifyEmailUseCase: container.verifyEmailUseCase,
     requestPasswordResetUseCase: container.requestPasswordResetUseCase,
     confirmPasswordResetUseCase: container.confirmPasswordResetUseCase,
+    adminController: container.adminController,
+    organizationController: container.organizationController,
+    organizationMembershipController: container.organizationMembershipController,
+    authorizationMiddleware: container.authorizationMiddleware,
     isProduction: config.server.isProduction,
     version: process.env.npm_package_version || '1.0.0',
   });
