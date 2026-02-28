@@ -22,7 +22,7 @@
 
 import { HttpRequest } from '../controllers/auth.controller.js';
 import { IAuthorizationService } from '../../../application/ports/authorization.service.port.js';
-import { UnauthorizedError } from '../../../domain/errors/authorization.errors.js';
+import { UnauthorizedError, UnauthenticatedError } from '../../../domain/errors/authorization.errors.js';
 import { AuthenticatedRequest } from './auth.middleware.js';
 
 /**
@@ -73,7 +73,7 @@ export class AuthorizationMiddleware {
       // 1. Verify user is authenticated
       const authRequest = request as AuthenticatedRequest;
       if (!authRequest.user) {
-        throw new UnauthorizedError('Authentication required');
+        throw new UnauthenticatedError();
       }
 
       const userId = authRequest.user.userId;

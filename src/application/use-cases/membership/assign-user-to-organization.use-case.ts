@@ -1,9 +1,9 @@
 /**
-import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * USE CASE: AssignUserToOrganization
  * Assigns a user to an organization with a specific role.
  */
 
+import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { IOrganizationRepository } from '../../../domain/repositories/organization.repository.interface.js';
 import { IOrganizationMembershipRepository } from '../../../domain/repositories/organization-membership.repository.interface.js';
 import { UserRepository } from '../../../domain/repositories/user.repository.interface.js';
@@ -59,7 +59,7 @@ export class AssignUserToOrganizationUseCase {
     }
 
     // 3. Verify user exists
-    const user = await this.deps.userRepository.findById(request.userId);
+    const user = await this.deps.userRepository.findById(UserId.create(request.userId));
     if (!user) {
       throw new UserNotFoundError(request.userId);
     }

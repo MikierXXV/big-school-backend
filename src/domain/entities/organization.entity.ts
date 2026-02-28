@@ -53,6 +53,7 @@ export interface CreateOrganizationData {
  */
 export interface UpdateOrganizationData {
   readonly name?: string;
+  readonly type?: string;
   readonly description?: string | null;
   readonly address?: string | null;
   readonly contactEmail?: string | null;
@@ -234,6 +235,7 @@ export class Organization {
     const newProps: OrganizationProps = {
       ...this._props,
       name: data.name !== undefined ? data.name : this._props.name,
+      type: data.type !== undefined ? OrganizationType.create(data.type) : this._props.type,
       description: data.description !== undefined ? data.description : this._props.description,
       address: data.address !== undefined ? data.address : this._props.address,
       contactEmail: data.contactEmail !== undefined ? data.contactEmail : this._props.contactEmail,

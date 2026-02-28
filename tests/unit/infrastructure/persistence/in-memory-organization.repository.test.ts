@@ -281,7 +281,7 @@ describe('InMemoryOrganizationRepository', () => {
   });
 
   describe('delete()', () => {
-    it('should delete an existing organization', async () => {
+    it('should soft delete an existing organization (sets active=false)', async () => {
       // Arrange
       const org = Organization.create({
         id: 'org-123',
@@ -295,7 +295,8 @@ describe('InMemoryOrganizationRepository', () => {
 
       // Assert
       const found = await repository.findById('org-123');
-      expect(found).toBeNull();
+      expect(found).not.toBeNull();
+      expect(found!.active).toBe(false);
     });
 
     it('should throw OrganizationNotFoundError if organization does not exist', async () => {

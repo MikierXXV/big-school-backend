@@ -34,6 +34,9 @@ export function toHttpRequest<TBody = unknown>(req: Request): HttpRequest<TBody>
   // Extract user agent
   const userAgent = req.headers['user-agent'];
 
+  // Preserve user field from authentication middleware if present
+  const user = (req as any).user;
+
   return {
     body: req.body as TBody,
     headers: req.headers as Record<string, string | undefined>,
@@ -41,6 +44,7 @@ export function toHttpRequest<TBody = unknown>(req: Request): HttpRequest<TBody>
     query: req.query as Record<string, string>,
     ...(ip ? { ip } : {}),
     ...(userAgent ? { userAgent } : {}),
+    ...(user ? { user } : {}),
   };
 }
 

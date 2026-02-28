@@ -32,6 +32,8 @@ export interface CreateOrganizationRequestDto {
 export interface UpdateOrganizationRequestDto {
   /** New name (optional) */
   readonly name?: string;
+  /** New type (optional) */
+  readonly type?: string;
   /** New description (optional) */
   readonly description?: string;
   /** New address (optional) */
@@ -82,4 +84,18 @@ export interface ListOrganizationsQueryDto {
   readonly page?: number;
   /** Number of results per page (optional, default: 10) */
   readonly limit?: number;
+}
+
+/**
+ * Response for listing organizations
+ */
+export interface ListOrganizationsResponseDto {
+  /** Array of organizations */
+  readonly organizations: OrganizationResponseDto[];
+  /** Total number of organizations matching the query */
+  readonly total: number;
+  /** Current page number */
+  readonly page: number;
+  /** Number of items per page */
+  readonly limit: number;
 }

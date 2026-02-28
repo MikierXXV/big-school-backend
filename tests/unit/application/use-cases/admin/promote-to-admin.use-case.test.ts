@@ -25,6 +25,7 @@ describe('PromoteToAdminUseCase', () => {
   let mockUserRepository: UserRepository;
   let mockAuthorizationService: IAuthorizationService;
   let mockDateTimeService: IDateTimeService;
+  let mockAdminPermissionRepository: any;
 
   const executorId = '550e8400-e29b-41d4-a716-446655440000'; // Valid UUID
   const targetUserId = '550e8400-e29b-41d4-a716-446655440001'; // Valid UUID
@@ -56,8 +57,16 @@ describe('PromoteToAdminUseCase', () => {
       toLocalString: vi.fn().mockImplementation((date: Date) => date.toISOString()),
     } as any;
 
+    // Mock AdminPermissionRepository
+    mockAdminPermissionRepository = {
+      findByUserId: vi.fn().mockResolvedValue([]),
+      save: vi.fn(),
+      delete: vi.fn(),
+    };
+
     useCase = new PromoteToAdminUseCase({
       userRepository: mockUserRepository,
+      adminPermissionRepository: mockAdminPermissionRepository,
       authorizationService: mockAuthorizationService,
       dateTimeService: mockDateTimeService,
     });

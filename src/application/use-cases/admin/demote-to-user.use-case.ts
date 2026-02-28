@@ -1,5 +1,4 @@
 /**
-import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * ============================================
  * USE CASE: DemoteToUser
  * ============================================
@@ -9,6 +8,8 @@ import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  */
 
 import { UserRepository } from '../../../domain/repositories/user.repository.interface.js';
+import { IAdminPermissionRepository } from '../../../domain/repositories/admin-permission.repository.interface.js';
+import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { SystemRole } from '../../../domain/value-objects/system-role.value-object.js';
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
@@ -24,6 +25,7 @@ import {
 
 export interface DemoteToUserDependencies {
   readonly userRepository: UserRepository;
+  readonly adminPermissionRepository: IAdminPermissionRepository;
   readonly authorizationService: IAuthorizationService;
   readonly dateTimeService: IDateTimeService;
 }
@@ -47,7 +49,8 @@ export class DemoteToUserUseCase {
     }
 
     // 2. Find target user
-    const targetUser = await this.deps.userRepository.findById(request.userId);
+    const userId = UserId.create(request.userId);
+    const targetUser = await this.deps.userRepository.findById(userId);
 
     if (!targetUser) {
       throw new UserNotFoundError(request.userId);
@@ -60,7 +63,7 @@ export class DemoteToUserUseCase {
 
     // 4. If already USER, return success (idempotent)
     if (targetUser.isUser()) {
-      return this.buildResponse(targetUser);
+      return await this.buildResponse(targetUser);
     }
 
     // 5. Change systemRole to USER
@@ -71,16 +74,23 @@ export class DemoteToUserUseCase {
     await this.deps.userRepository.update(updatedUser);
 
     // 7. Return response DTO
-    return this.buildResponse(updatedUser);
+    return await this.buildResponse(updatedUser);
   }
 
-  private buildResponse(user: any): AdminRoleResponseDto {
+  private async buildResponse(user: any): Promise<AdminRoleResponseDto> {
+    // Get the user's permissions
+    const grants = await this.deps.adminPermissionRepository.findByUserId(
+      user.id.value
+    );
+    const permissions = grants.map((grant: any) => grant.permission.getValue());
+
     return {
       userId: user.id.value,
       email: user.email.value,
       firstName: user.firstName,
       lastName: user.lastName,
       systemRole: user.systemRole.getValue(),
+      permissions,
       updatedAt: user.updatedAt,
     };
   }

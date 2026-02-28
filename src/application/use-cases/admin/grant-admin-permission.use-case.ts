@@ -1,5 +1,4 @@
 /**
-import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * ============================================
  * USE CASE: GrantAdminPermission
  * ============================================
@@ -8,6 +7,7 @@ import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * Grants one or more permissions to an ADMIN user.
  */
 
+import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { UserRepository } from '../../../domain/repositories/user.repository.interface.js';
 import { IAdminPermissionRepository } from '../../../domain/repositories/admin-permission.repository.interface.js';
 import { AdminPermissionGrant } from '../../../domain/entities/admin-permission-grant.entity.js';
@@ -24,6 +24,7 @@ import {
   InsufficientPermissionsError,
   CannotModifySuperAdminError,
 } from '../../../domain/errors/authorization.errors.js';
+import { InvalidFieldFormatError } from '../../errors/validation.errors.js';
 
 export interface GrantAdminPermissionDependencies {
   readonly userRepository: UserRepository;
@@ -44,27 +45,29 @@ export class GrantAdminPermissionUseCase {
     request: GrantPermissionRequestDto,
     executorId: string
   ): Promise<AdminPermissionsResponseDto> {
-    // 1. Verify executor is SUPER_ADMIN
-    const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
-
-    if (!isSuperAdmin) {
-      throw new InsufficientPermissionsError('SUPER_ADMIN role', executorId);
-    }
-
-    // 2. Find target user
-    const targetUser = await this.deps.userRepository.findById(request.userId);
+    // 1. Find target user
+    const targetUser = await this.deps.userRepository.findById(UserId.create(request.userId));
 
     if (!targetUser) {
       throw new UserNotFoundError(request.userId);
     }
 
-    // 3. Check target is ADMIN (not SUPER_ADMIN, not USER)
+    // 2. FIRST: Validate target user is admin (validation - 400 if not)
+    const systemRole = targetUser.systemRole.getValue();
+    if (systemRole !== 'admin' && systemRole !== 'super_admin') {
+      throw new InvalidFieldFormatError('userId', 'Must be an admin user');
+    }
+
+    // 3. Check target is not SUPER_ADMIN (authorization - 403 if yes)
     if (targetUser.isSuperAdmin()) {
       throw new CannotModifySuperAdminError();
     }
 
-    if (!targetUser.isAdmin()) {
-      throw new InsufficientPermissionsError('Target must be ADMIN', request.userId);
+    // 4. THEN: Verify executor is SUPER_ADMIN (authorization - 403 if not)
+    const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
+
+    if (!isSuperAdmin) {
+      throw new InsufficientPermissionsError('SUPER_ADMIN role', executorId);
     }
 
     // 4. For each permission, check if already granted, then grant

@@ -58,6 +58,8 @@ export interface AdminRoleResponseDto {
   readonly lastName: string;
   /** Current system role ('admin' or 'user') */
   readonly systemRole: string;
+  /** List of granted permissions (array of AdminPermissionValue strings) */
+  readonly permissions: string[];
   /** Date of last update */
   readonly updatedAt: Date;
 }
@@ -79,4 +81,30 @@ export interface AdminPermissionsResponseDto {
     /** Date when permission was granted */
     readonly grantedAt: Date;
   }[];
+}
+
+/**
+ * Admin list item for the list response
+ */
+export interface AdminListItem {
+  /** User ID */
+  readonly userId: string;
+  /** User email */
+  readonly email: string;
+  /** User first name */
+  readonly firstName: string;
+  /** User last name */
+  readonly lastName: string;
+  /** System role (admin or super_admin) */
+  readonly systemRole: string;
+  /** List of granted permissions (array of AdminPermissionValue strings) */
+  readonly permissions: string[];
+}
+
+/**
+ * Response with list of all admins
+ */
+export interface AdminListResponseDto {
+  /** Array of admin users with their permissions */
+  readonly admins: AdminListItem[];
 }

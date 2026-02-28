@@ -12,8 +12,10 @@ import { AdminController } from '../controllers/admin.controller.js';
 import { OrganizationController } from '../controllers/organization.controller.js';
 import { OrganizationMembershipController } from '../controllers/organization-membership.controller.js';
 import { AuthorizationMiddleware, AuthorizationMiddlewareOptions } from '../middlewares/authorization.middleware.js';
+import { AuthMiddleware } from '../middlewares/auth.middleware.js';
 import { adaptRoute } from '../adapters/route-adapter.js';
 import { createValidationMiddleware } from '../adapters/validation.adapter.js';
+import { createExpressAuthMiddleware } from '../adapters/auth-middleware.adapter.js';
 import { toHttpRequest } from '../adapters/express.adapter.js';
 import {
   validatePromoteToAdmin,
@@ -61,15 +63,20 @@ function createAuthorizationMiddleware(
  * @param organizationController - Controller de organizaciones
  * @param membershipController - Controller de membresías
  * @param authorizationMiddleware - Middleware de autorización
+ * @param authMiddleware - Middleware de autenticación
  * @returns Router configurado con todas las rutas RBAC
  */
 export function createRBACRoutes(
   adminController: AdminController,
   organizationController: OrganizationController,
   membershipController: OrganizationMembershipController,
-  authorizationMiddleware: AuthorizationMiddleware
+  authorizationMiddleware: AuthorizationMiddleware,
+  authMiddleware: AuthMiddleware
 ): Router {
   const router = Router();
+
+  // Apply authentication middleware to all RBAC routes
+  router.use(createExpressAuthMiddleware(authMiddleware));
 
   // ============================================
   // Admin Routes (require SUPER_ADMIN)

@@ -13,7 +13,7 @@ import { DomainError } from './domain.error.js';
  * Error when an invalid system role value is provided
  */
 export class InvalidSystemRoleError extends DomainError {
-  public readonly code = 'INVALID_SYSTEM_ROLE';
+  public readonly code = 'DOMAIN_INVALID_SYSTEM_ROLE';
 
   constructor(value: unknown) {
     super(
@@ -27,7 +27,7 @@ export class InvalidSystemRoleError extends DomainError {
  * Error when an invalid admin permission value is provided
  */
 export class InvalidAdminPermissionError extends DomainError {
-  public readonly code = 'INVALID_ADMIN_PERMISSION';
+  public readonly code = 'DOMAIN_INVALID_ADMIN_PERMISSION';
 
   constructor(value: unknown) {
     super(
@@ -41,7 +41,7 @@ export class InvalidAdminPermissionError extends DomainError {
  * Error when user lacks required permissions for an action
  */
 export class InsufficientPermissionsError extends DomainError {
-  public readonly code = 'INSUFFICIENT_PERMISSIONS';
+  public readonly code = 'DOMAIN_INSUFFICIENT_PERMISSIONS';
 
   constructor(requiredPermission: string, userId: string) {
     super(
@@ -55,7 +55,7 @@ export class InsufficientPermissionsError extends DomainError {
  * Error when attempting to modify or delete a SUPER_ADMIN user
  */
 export class CannotModifySuperAdminError extends DomainError {
-  public readonly code = 'CANNOT_MODIFY_SUPER_ADMIN';
+  public readonly code = 'DOMAIN_CANNOT_MODIFY_SUPER_ADMIN';
 
   constructor() {
     super(
@@ -68,7 +68,7 @@ export class CannotModifySuperAdminError extends DomainError {
  * Error when user is not authenticated
  */
 export class UnauthenticatedError extends DomainError {
-  public readonly code = 'UNAUTHENTICATED';
+  public readonly code = 'DOMAIN_UNAUTHENTICATED';
 
   constructor() {
     super('Authentication required');
@@ -79,7 +79,7 @@ export class UnauthenticatedError extends DomainError {
  * Error when user is authenticated but lacks authorization
  */
 export class UnauthorizedError extends DomainError {
-  public readonly code = 'UNAUTHORIZED';
+  public readonly code = 'DOMAIN_UNAUTHORIZED';
 
   constructor(resource?: string) {
     const message = resource
@@ -93,7 +93,7 @@ export class UnauthorizedError extends DomainError {
  * Error when an invalid organization role value is provided
  */
 export class InvalidOrganizationRoleError extends DomainError {
-  public readonly code = 'INVALID_ORGANIZATION_ROLE';
+  public readonly code = 'DOMAIN_INVALID_ORGANIZATION_ROLE';
 
   constructor(value: unknown) {
     super(

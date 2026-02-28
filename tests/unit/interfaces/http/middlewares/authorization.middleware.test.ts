@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthorizationMiddleware } from '../../../../../src/interfaces/http/middlewares/authorization.middleware.js';
 import { IAuthorizationService } from '../../../../../src/application/ports/authorization.service.port.js';
-import { UnauthorizedError } from '../../../../../src/domain/errors/authorization.errors.js';
+import { UnauthorizedError, UnauthenticatedError } from '../../../../../src/domain/errors/authorization.errors.js';
 import { AuthenticatedRequest } from '../../../../../src/interfaces/http/middlewares/auth.middleware.js';
 
 describe('AuthorizationMiddleware', () => {
@@ -70,7 +70,7 @@ describe('AuthorizationMiddleware', () => {
       await expect(checkFn(request)).rejects.toThrow('SUPER_ADMIN role required');
     });
 
-    it('should throw UnauthorizedError when user is not authenticated', async () => {
+    it('should throw UnauthenticatedError when user is not authenticated', async () => {
       const request: AuthenticatedRequest = {
         body: {},
         headers: {},
@@ -81,7 +81,7 @@ describe('AuthorizationMiddleware', () => {
 
       const checkFn = middleware.checkPermission({ requireSuperAdmin: true });
 
-      await expect(checkFn(request)).rejects.toThrow(UnauthorizedError);
+      await expect(checkFn(request)).rejects.toThrow(UnauthenticatedError);
       await expect(checkFn(request)).rejects.toThrow('Authentication required');
     });
   });
@@ -257,7 +257,7 @@ describe('AuthorizationMiddleware', () => {
 
       const checkFn = middleware.checkPermission({});
 
-      await expect(checkFn(request)).rejects.toThrow(UnauthorizedError);
+      await expect(checkFn(request)).rejects.toThrow(UnauthenticatedError);
       await expect(checkFn(request)).rejects.toThrow('Authentication required');
     });
   });

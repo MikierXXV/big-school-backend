@@ -60,12 +60,12 @@ export interface MembershipResponseDto {
   readonly leftAt?: Date;
   /** Whether membership is currently active */
   readonly isActive: boolean;
-  /** Optional user details */
-  readonly user?: {
-    readonly email: string;
-    readonly firstName: string;
-    readonly lastName: string;
-  };
+  /** User email */
+  readonly email: string;
+  /** User first name */
+  readonly firstName: string;
+  /** User last name */
+  readonly lastName: string;
 }
 
 /**
@@ -77,7 +77,11 @@ export interface OrganizationMembersResponseDto {
   /** List of memberships */
   readonly members: MembershipResponseDto[];
   /** Total number of members */
-  readonly totalMembers: number;
+  readonly total: number;
+  /** Current page number */
+  readonly page: number;
+  /** Items per page */
+  readonly limit: number;
 }
 
 /**
@@ -90,9 +94,14 @@ export interface UserOrganizationsResponseDto {
   readonly organizations: {
     readonly organizationId: string;
     readonly organizationName: string;
+    readonly organizationType: string;
     readonly role: string;
     readonly joinedAt: Date;
   }[];
   /** Total number of organizations */
-  readonly totalOrganizations: number;
+  readonly total: number;
+  /** Current page number */
+  readonly page: number;
+  /** Items per page */
+  readonly limit: number;
 }

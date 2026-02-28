@@ -45,9 +45,13 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
    * @throws OrganizationAlreadyExistsError if name already exists
    */
   public async save(organization: Organization): Promise<void> {
-    // Verify name uniqueness
-    if (this.nameIndex.has(organization.name)) {
-      throw new OrganizationAlreadyExistsError(organization.name);
+    // Verify name uniqueness (only check active organizations)
+    const existingOrgId = this.nameIndex.get(organization.name);
+    if (existingOrgId) {
+      const existingOrg = this.organizations.get(existingOrgId);
+      if (existingOrg && existingOrg.active) {
+        throw new OrganizationAlreadyExistsError(organization.name);
+      }
     }
 
     // Save organization
@@ -69,10 +73,13 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
     // Get existing organization to update name index if name changed
     const existingOrg = this.organizations.get(organization.id)!;
     if (existingOrg.name !== organization.name) {
-      // Check if new name already exists (but not from this org)
+      // Check if new name already exists (but not from this org or inactive orgs)
       const existingIdWithNewName = this.nameIndex.get(organization.name);
       if (existingIdWithNewName && existingIdWithNewName !== organization.id) {
-        throw new OrganizationAlreadyExistsError(organization.name);
+        const conflictOrg = this.organizations.get(existingIdWithNewName);
+        if (conflictOrg && conflictOrg.active) {
+          throw new OrganizationAlreadyExistsError(organization.name);
+        }
       }
 
       // Update name index
@@ -84,7 +91,7 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
   }
 
   /**
-   * Deletes an organization.
+   * Deletes an organization (soft delete - sets active=false).
    *
    * @param id - Organization ID
    * @throws OrganizationNotFoundError if not found
@@ -95,8 +102,12 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
       throw new OrganizationNotFoundError(id);
     }
 
+    // Soft delete: deactivate the organization
+    const deactivatedOrg = org.deactivate(new Date());
+    this.organizations.set(id, deactivatedOrg);
+
+    // Remove name from index so it can be reused
     this.nameIndex.delete(org.name);
-    this.organizations.delete(id);
   }
 
   /**

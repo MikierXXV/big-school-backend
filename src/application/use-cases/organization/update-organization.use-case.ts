@@ -56,15 +56,17 @@ export class UpdateOrganizationUseCase {
 
     let updatedOrg = organization;
 
-    if (request.name || request.description !== undefined || request.address !== undefined ||
+    if (request.name || request.type !== undefined || request.description !== undefined || request.address !== undefined ||
         request.contactEmail !== undefined || request.contactPhone !== undefined) {
-      updatedOrg = organization.updateInfo({
-        name: request.name,
-        description: request.description,
-        address: request.address,
-        contactEmail: request.contactEmail,
-        contactPhone: request.contactPhone,
-      }, now);
+      const updateData: any = {};
+      if (request.name !== undefined) updateData.name = request.name;
+      if (request.type !== undefined) updateData.type = request.type;
+      if (request.description !== undefined) updateData.description = request.description ?? null;
+      if (request.address !== undefined) updateData.address = request.address ?? null;
+      if (request.contactEmail !== undefined) updateData.contactEmail = request.contactEmail ?? null;
+      if (request.contactPhone !== undefined) updateData.contactPhone = request.contactPhone ?? null;
+
+      updatedOrg = organization.updateInfo(updateData, now);
     }
 
     if (request.active !== undefined) {
@@ -74,17 +76,29 @@ export class UpdateOrganizationUseCase {
     await this.deps.organizationRepository.update(updatedOrg);
 
     // 4. Return response
-    return {
+    const response: any = {
       id: updatedOrg.id,
       name: updatedOrg.name,
       type: updatedOrg.type.getValue(),
-      description: updatedOrg.description ?? undefined,
-      address: updatedOrg.address ?? undefined,
-      contactEmail: updatedOrg.contactEmail ?? undefined,
-      contactPhone: updatedOrg.contactPhone ?? undefined,
       active: updatedOrg.active,
       createdAt: updatedOrg.createdAt,
       updatedAt: updatedOrg.updatedAt,
     };
+
+    // Only add optional fields if they have values
+    if (updatedOrg.description !== null) {
+      response.description = updatedOrg.description;
+    }
+    if (updatedOrg.address !== null) {
+      response.address = updatedOrg.address;
+    }
+    if (updatedOrg.contactEmail !== null) {
+      response.contactEmail = updatedOrg.contactEmail;
+    }
+    if (updatedOrg.contactPhone !== null) {
+      response.contactPhone = updatedOrg.contactPhone;
+    }
+
+    return response;
   }
 }

@@ -22,6 +22,7 @@
  */
 
 import { UserRepository } from '../../../domain/repositories/user.repository.interface.js';
+import { IAdminPermissionRepository } from '../../../domain/repositories/admin-permission.repository.interface.js';
 import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { SystemRole } from '../../../domain/value-objects/system-role.value-object.js';
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
@@ -41,6 +42,7 @@ import {
  */
 export interface PromoteToAdminDependencies {
   readonly userRepository: UserRepository;
+  readonly adminPermissionRepository: IAdminPermissionRepository;
   readonly authorizationService: IAuthorizationService;
   readonly dateTimeService: IDateTimeService;
 }
@@ -94,7 +96,7 @@ export class PromoteToAdminUseCase {
 
     // 4. If already ADMIN, return success (idempotent)
     if (targetUser.isAdmin()) {
-      return this.buildResponse(targetUser);
+      return await this.buildResponse(targetUser);
     }
 
     // 5. Change systemRole to ADMIN
@@ -105,19 +107,26 @@ export class PromoteToAdminUseCase {
     await this.deps.userRepository.update(updatedUser);
 
     // 7. Return response DTO
-    return this.buildResponse(updatedUser);
+    return await this.buildResponse(updatedUser);
   }
 
   /**
    * Builds the response DTO from updated user
    */
-  private buildResponse(user: any): AdminRoleResponseDto {
+  private async buildResponse(user: any): Promise<AdminRoleResponseDto> {
+    // Get the user's permissions
+    const grants = await this.deps.adminPermissionRepository.findByUserId(
+      user.id.value
+    );
+    const permissions = grants.map((grant: any) => grant.permission.getValue());
+
     return {
       userId: user.id.value,
       email: user.email.value,
       firstName: user.firstName,
       lastName: user.lastName,
       systemRole: user.systemRole.getValue(),
+      permissions,
       updatedAt: user.updatedAt,
     };
   }

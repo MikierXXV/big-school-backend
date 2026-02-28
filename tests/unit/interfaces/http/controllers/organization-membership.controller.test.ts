@@ -115,18 +115,25 @@ describe('OrganizationMembershipController', () => {
       user: { userId: EXECUTOR_ID, email: 'admin@example.com' },
     };
 
+    const successResponse = {
+      userId: USER_ID,
+      organizationId: ORG_ID,
+      role: 'doctor',
+      leftAt: new Date().toISOString(),
+    };
+
     it('should return 200 on successful removal', async () => {
-      mockRemoveUserFromOrganizationUseCase.execute.mockResolvedValue(undefined);
+      mockRemoveUserFromOrganizationUseCase.execute.mockResolvedValue(successResponse);
 
       const result = await controller.remove(validRequest);
 
       expect(result.statusCode).toBe(200);
       expect(result.body.success).toBe(true);
-      expect(result.body.data).toEqual({ message: 'Member removed successfully' });
+      expect(result.body.data).toEqual(successResponse);
     });
 
     it('should call removeUserFromOrganizationUseCase.execute with dto and executorId', async () => {
-      mockRemoveUserFromOrganizationUseCase.execute.mockResolvedValue(undefined);
+      mockRemoveUserFromOrganizationUseCase.execute.mockResolvedValue(successResponse);
 
       await controller.remove(validRequest);
 
@@ -242,7 +249,8 @@ describe('OrganizationMembershipController', () => {
       expect(mockGetOrganizationMembersUseCase.execute).toHaveBeenCalledTimes(1);
       expect(mockGetOrganizationMembersUseCase.execute).toHaveBeenCalledWith(
         ORG_ID,
-        EXECUTOR_ID
+        EXECUTOR_ID,
+        {}
       );
     });
 
@@ -296,7 +304,8 @@ describe('OrganizationMembershipController', () => {
       expect(mockGetUserOrganizationsUseCase.execute).toHaveBeenCalledTimes(1);
       expect(mockGetUserOrganizationsUseCase.execute).toHaveBeenCalledWith(
         USER_ID,
-        EXECUTOR_ID
+        EXECUTOR_ID,
+        {}
       );
     });
 

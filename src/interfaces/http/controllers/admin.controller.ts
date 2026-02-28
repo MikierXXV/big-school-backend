@@ -26,6 +26,7 @@ import { DemoteToUserUseCase } from '../../../application/use-cases/admin/demote
 import { GrantAdminPermissionUseCase } from '../../../application/use-cases/admin/grant-admin-permission.use-case.js';
 import { RevokeAdminPermissionUseCase } from '../../../application/use-cases/admin/revoke-admin-permission.use-case.js';
 import { GetAdminPermissionsUseCase } from '../../../application/use-cases/admin/get-admin-permissions.use-case.js';
+import { ListAdminsUseCase } from '../../../application/use-cases/admin/list-admins.use-case.js';
 import {
   PromoteToAdminRequestDto,
   DemoteToUserRequestDto,
@@ -33,6 +34,7 @@ import {
   RevokePermissionRequestDto,
   AdminRoleResponseDto,
   AdminPermissionsResponseDto,
+  AdminListResponseDto,
 } from '../../../application/dtos/admin/admin.dto.js';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 
@@ -45,6 +47,7 @@ export interface AdminControllerDependencies {
   readonly grantAdminPermissionUseCase: GrantAdminPermissionUseCase;
   readonly revokeAdminPermissionUseCase: RevokeAdminPermissionUseCase;
   readonly getAdminPermissionsUseCase: GetAdminPermissionsUseCase;
+  readonly listAdminsUseCase: ListAdminsUseCase;
 }
 
 /**
@@ -175,6 +178,28 @@ export class AdminController {
       targetUserId,
       executorId
     );
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja GET /admin/list
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con lista de administradores
+   */
+  public async list(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<AdminListResponseDto>> {
+    const executorId = request.user!.userId;
+
+    const result = await this.deps.listAdminsUseCase.execute(executorId);
 
     return {
       statusCode: 200,

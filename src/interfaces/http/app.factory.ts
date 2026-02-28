@@ -221,7 +221,8 @@ export function createApp(deps: AppDependencies): Express {
     deps.adminController,
     deps.organizationController,
     deps.organizationMembershipController,
-    deps.authorizationMiddleware
+    deps.authorizationMiddleware,
+    authMiddleware
   );
   app.use('/api', rbacRoutes);
 

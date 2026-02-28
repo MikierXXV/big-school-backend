@@ -1,5 +1,4 @@
 /**
-import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * ============================================
  * USE CASE: GetAdminPermissions
  * ============================================
@@ -8,6 +7,7 @@ import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * Gets all permissions granted to an ADMIN user.
  */
 
+import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { UserRepository } from '../../../domain/repositories/user.repository.interface.js';
 import { IAdminPermissionRepository } from '../../../domain/repositories/admin-permission.repository.interface.js';
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
@@ -41,7 +41,7 @@ export class GetAdminPermissionsUseCase {
     }
 
     // 2. Find target user
-    const targetUser = await this.deps.userRepository.findById(userId);
+    const targetUser = await this.deps.userRepository.findById(UserId.create(userId));
 
     if (!targetUser) {
       throw new UserNotFoundError(userId);

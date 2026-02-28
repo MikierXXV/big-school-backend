@@ -31,6 +31,7 @@ import {
   UpdateOrganizationRequestDto,
   OrganizationResponseDto,
   ListOrganizationsQueryDto,
+  ListOrganizationsResponseDto,
 } from '../../../application/dtos/organization/organization.dto.js';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 
@@ -122,9 +123,17 @@ export class OrganizationController {
    */
   public async list(
     request: AuthenticatedRequest
-  ): Promise<HttpResponse<OrganizationResponseDto[]>> {
+  ): Promise<HttpResponse<ListOrganizationsResponseDto>> {
     const executorId = request.user!.userId;
-    const query: ListOrganizationsQueryDto = request.query || {};
+    const rawQuery = request.query || {};
+
+    // Parse query parameters from string to proper types
+    const query: ListOrganizationsQueryDto = {
+      ...(rawQuery.type && { type: rawQuery.type as string }),
+      ...(rawQuery.active !== undefined && { active: rawQuery.active === 'true' }),
+      ...(rawQuery.page && { page: parseInt(rawQuery.page as string, 10) }),
+      ...(rawQuery.limit && { limit: parseInt(rawQuery.limit as string, 10) }),
+    };
 
     const result = await this.deps.listOrganizationsUseCase.execute(query, executorId);
 
@@ -168,7 +177,7 @@ export class OrganizationController {
    * Maneja DELETE /organizations/:id
    *
    * @param request - Request HTTP autenticado
-   * @returns Response HTTP con resultado
+   * @returns Response HTTP con organización eliminada
    */
   public async delete(
     request: AuthenticatedRequest
@@ -183,6 +192,29 @@ export class OrganizationController {
       body: {
         success: true,
         data: { message: 'Organization deleted successfully' },
+      },
+    };
+  }
+
+  /**
+   * Maneja DELETE /organizations/:id (deactivate)
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con organización desactivada
+   */
+  public async deactivate(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<OrganizationResponseDto>> {
+    const executorId = request.user!.userId;
+    const organizationId = request.params.id || '';
+
+    const result = await this.deps.deleteOrganizationUseCase.execute(organizationId, executorId);
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
       },
     };
   }

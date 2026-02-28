@@ -69,10 +69,10 @@ export class CreateOrganizationUseCase {
       id: orgId,
       name: request.name,
       type: orgType,
-      description: request.description,
-      address: request.address,
-      contactEmail: request.contactEmail,
-      contactPhone: request.contactPhone,
+      description: request.description ?? null,
+      address: request.address ?? null,
+      contactEmail: request.contactEmail ?? null,
+      contactPhone: request.contactPhone ?? null,
     });
 
     // 4. Save organization
@@ -91,17 +91,29 @@ export class CreateOrganizationUseCase {
     await this.deps.membershipRepository.save(membership);
 
     // 6. Return response
-    return {
+    const response: any = {
       id: organization.id,
       name: organization.name,
       type: organization.type.getValue(),
-      description: organization.description ?? undefined,
-      address: organization.address ?? undefined,
-      contactEmail: organization.contactEmail ?? undefined,
-      contactPhone: organization.contactPhone ?? undefined,
       active: organization.active,
       createdAt: organization.createdAt,
       updatedAt: organization.updatedAt,
     };
+
+    // Only add optional fields if they have values
+    if (organization.description !== null) {
+      response.description = organization.description;
+    }
+    if (organization.address !== null) {
+      response.address = organization.address;
+    }
+    if (organization.contactEmail !== null) {
+      response.contactEmail = organization.contactEmail;
+    }
+    if (organization.contactPhone !== null) {
+      response.contactPhone = organization.contactPhone;
+    }
+
+    return response;
   }
 }

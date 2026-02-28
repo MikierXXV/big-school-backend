@@ -18,11 +18,14 @@
  * Feature 012: RBAC + Organizations
  */
 
-import { UserId } from '../../domain/entities/user-id.value-object.js';
+import { UserId } from '../../domain/value-objects/user-id.value-object.js';
 import { Email } from '../../domain/value-objects/email.value-object.js';
-import { PasswordHash } from '../../domain/value-objects/password-hash.value-object.js';
 import { User, UserStatus } from '../../domain/entities/user.entity.js';
-import type { IUserRepository } from '../../domain/repositories/user.repository.interface.js';
+import { SystemRole } from '../../domain/value-objects/system-role.value-object.js';
+import { AdminPermission } from '../../domain/value-objects/admin-permission.value-object.js';
+import { AdminPermissionGrant } from '../../domain/entities/admin-permission-grant.entity.js';
+import type { UserRepository } from '../../domain/repositories/user.repository.interface.js';
+import type { IAdminPermissionRepository } from '../../domain/repositories/admin-permission.repository.interface.js';
 import type { IHashingService } from '../../application/ports/hashing.service.port.js';
 import type { IUuidGenerator } from '../../application/ports/uuid-generator.port.js';
 import type { ILogger } from '../../application/ports/logger.port.js';
@@ -71,12 +74,14 @@ function loadSuperAdminConfig(): SuperAdminConfig {
  * - If doesn't exist → creates SUPER_ADMIN user with ACTIVE status and verified email
  *
  * @param userRepository - User repository for persistence
+ * @param adminPermissionRepository - Admin permission repository for granting permissions
  * @param hashingService - Service to hash the password
  * @param uuidGenerator - Service to generate UUID for the user
  * @param logger - Logger for seed progress
  */
 export async function seedSuperAdmin(
-  userRepository: IUserRepository,
+  userRepository: UserRepository,
+  adminPermissionRepository: IAdminPermissionRepository,
   hashingService: IHashingService,
   uuidGenerator: IUuidGenerator,
   logger: ILogger
@@ -92,11 +97,15 @@ export async function seedSuperAdmin(
     const existingUser = await userRepository.findByEmail(emailVO);
 
     if (existingUser) {
-      // TODO: Once SystemRole is implemented, check if user is already SUPER_ADMIN
-      // For now, just log that user exists
-      logger.info(`✓ User with email ${config.email} already exists`);
-      logger.info('  NOTE: Once Feature 012 is complete, check system_role = super_admin');
-      return;
+      // Check if user is already SUPER_ADMIN
+      if (existingUser.systemRole.getValue() === 'super_admin') {
+        logger.info(`✓ SUPER_ADMIN already exists: ${config.email}`);
+        return;
+      } else {
+        logger.warn(`⚠️  User ${config.email} exists but is not SUPER_ADMIN (role: ${existingUser.systemRole.getValue()})`);
+        logger.warn('   Manual intervention required. Please promote this user or use a different email.');
+        return;
+      }
     }
 
     // Create SUPER_ADMIN user
@@ -114,6 +123,7 @@ export async function seedSuperAdmin(
       firstName: config.firstName,
       lastName: config.lastName,
       status: UserStatus.ACTIVE,
+      systemRole: SystemRole.create('super_admin'),
       createdAt: now,
       updatedAt: now,
       lastLoginAt: null,
@@ -127,15 +137,33 @@ export async function seedSuperAdmin(
     // Save to database
     await userRepository.save(superAdmin);
 
+    // Grant all permissions to SUPER_ADMIN
+    const allPermissions = [
+      'manage_users',
+      'manage_organizations',
+      'assign_members',
+      'view_all_data',
+    ];
+
+    for (const permission of allPermissions) {
+      const permissionVO = AdminPermission.create(permission);
+      const grantId = uuidGenerator.generate();
+      const permissionGrant = AdminPermissionGrant.create({
+        id: grantId,
+        adminUserId: userId.value, // Convert UserId to string
+        permission: permissionVO,
+        grantedBy: userId.value, // Convert UserId to string
+      });
+      await adminPermissionRepository.grant(permissionGrant);
+    }
+
     logger.info(`✅ SUPER_ADMIN created successfully: ${config.email}`);
-    logger.info('  System Role: super_admin (will be set via migration 008)');
+    logger.info('  System Role: super_admin');
     logger.info('  Status: ACTIVE');
     logger.info('  Email Verified: Yes');
-    logger.info('');
-    logger.info('⚠️  TODO: After applying migration 008, run:');
-    logger.info(`     UPDATE users SET system_role = 'super_admin' WHERE email = '${config.email}';`);
+    logger.info(`  Permissions: ${allPermissions.join(', ')}`);
   } catch (error) {
-    logger.error('❌ Error seeding SUPER_ADMIN:', error);
+    logger.error('❌ Error seeding SUPER_ADMIN:', error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }

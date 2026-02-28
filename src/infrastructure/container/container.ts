@@ -38,6 +38,7 @@ import { DemoteToUserUseCase } from '../../application/use-cases/admin/demote-to
 import { GrantAdminPermissionUseCase } from '../../application/use-cases/admin/grant-admin-permission.use-case.js';
 import { RevokeAdminPermissionUseCase } from '../../application/use-cases/admin/revoke-admin-permission.use-case.js';
 import { GetAdminPermissionsUseCase } from '../../application/use-cases/admin/get-admin-permissions.use-case.js';
+import { ListAdminsUseCase } from '../../application/use-cases/admin/list-admins.use-case.js';
 import { CreateOrganizationUseCase } from '../../application/use-cases/organization/create-organization.use-case.js';
 import { GetOrganizationUseCase } from '../../application/use-cases/organization/get-organization.use-case.js';
 import { ListOrganizationsUseCase } from '../../application/use-cases/organization/list-organizations.use-case.js';
@@ -258,12 +259,14 @@ export function createContainer(): AppContainer {
   // ============================================
   const promoteToAdminUseCase = new PromoteToAdminUseCase({
     userRepository,
+    adminPermissionRepository,
     authorizationService,
     dateTimeService,
   });
 
   const demoteToUserUseCase = new DemoteToUserUseCase({
     userRepository,
+    adminPermissionRepository,
     authorizationService,
     dateTimeService,
   });
@@ -283,6 +286,12 @@ export function createContainer(): AppContainer {
   });
 
   const getAdminPermissionsUseCase = new GetAdminPermissionsUseCase({
+    userRepository,
+    adminPermissionRepository,
+    authorizationService,
+  });
+
+  const listAdminsUseCase = new ListAdminsUseCase({
     userRepository,
     adminPermissionRepository,
     authorizationService,
@@ -334,18 +343,22 @@ export function createContainer(): AppContainer {
   });
 
   const removeUserFromOrganizationUseCase = new RemoveUserFromOrganizationUseCase({
+    organizationRepository,
     membershipRepository: organizationMembershipRepository,
+    userRepository,
     authorizationService,
     dateTimeService,
   });
 
   const changeUserOrganizationRoleUseCase = new ChangeUserOrganizationRoleUseCase({
+    organizationRepository,
     membershipRepository: organizationMembershipRepository,
     authorizationService,
     dateTimeService,
   });
 
   const getOrganizationMembersUseCase = new GetOrganizationMembersUseCase({
+    organizationRepository,
     membershipRepository: organizationMembershipRepository,
     userRepository,
     authorizationService,
@@ -354,6 +367,7 @@ export function createContainer(): AppContainer {
   const getUserOrganizationsUseCase = new GetUserOrganizationsUseCase({
     membershipRepository: organizationMembershipRepository,
     organizationRepository,
+    userRepository,
     authorizationService,
   });
 
@@ -366,6 +380,7 @@ export function createContainer(): AppContainer {
     grantAdminPermissionUseCase,
     revokeAdminPermissionUseCase,
     getAdminPermissionsUseCase,
+    listAdminsUseCase,
   });
 
   const organizationController = new OrganizationController({

@@ -1,5 +1,4 @@
 /**
-import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * ============================================
  * USE CASE: RevokeAdminPermission
  * ============================================
@@ -8,6 +7,7 @@ import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
  * Revokes a permission from an ADMIN user.
  */
 
+import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { UserRepository } from '../../../domain/repositories/user.repository.interface.js';
 import { IAdminPermissionRepository } from '../../../domain/repositories/admin-permission.repository.interface.js';
 import { AdminPermission } from '../../../domain/value-objects/admin-permission.value-object.js';
@@ -47,7 +47,7 @@ export class RevokeAdminPermissionUseCase {
     }
 
     // 2. Find target user
-    const targetUser = await this.deps.userRepository.findById(request.userId);
+    const targetUser = await this.deps.userRepository.findById(UserId.create(request.userId));
 
     if (!targetUser) {
       throw new UserNotFoundError(request.userId);

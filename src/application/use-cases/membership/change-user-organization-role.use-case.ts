@@ -3,15 +3,17 @@
  * Changes a user's role within an organization.
  */
 
+import { IOrganizationRepository } from '../../../domain/repositories/organization.repository.interface.js';
 import { IOrganizationMembershipRepository } from '../../../domain/repositories/organization-membership.repository.interface.js';
 import { OrganizationRole } from '../../../domain/value-objects/organization-role.value-object.js';
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
 import { ChangeMemberRoleRequestDto, MembershipResponseDto } from '../../dtos/membership/membership.dto.js';
-import { UserNotMemberError } from '../../../domain/errors/organization.errors.js';
+import { UserNotMemberError, OrganizationNotFoundError } from '../../../domain/errors/organization.errors.js';
 import { InsufficientPermissionsError } from '../../../domain/errors/authorization.errors.js';
 
 export interface ChangeUserOrganizationRoleDependencies {
+  readonly organizationRepository: IOrganizationRepository;
   readonly membershipRepository: IOrganizationMembershipRepository;
   readonly authorizationService: IAuthorizationService;
   readonly dateTimeService: IDateTimeService;
@@ -28,6 +30,12 @@ export class ChangeUserOrganizationRoleUseCase {
     request: ChangeMemberRoleRequestDto,
     executorId: string
   ): Promise<MembershipResponseDto> {
+    // 0. Verify organization exists
+    const organization = await this.deps.organizationRepository.findById(request.organizationId);
+    if (!organization) {
+      throw new OrganizationNotFoundError(request.organizationId);
+    }
+
     // 1. Check permissions
     const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
     const hasAssignMembers = await this.deps.authorizationService.hasAdminPermission(
@@ -45,7 +53,7 @@ export class ChangeUserOrganizationRoleUseCase {
       throw new InsufficientPermissionsError('Change member role', executorId);
     }
 
-    // 2. Find membership
+    // 2. Find membership and verify it exists
     const membership = await this.deps.membershipRepository.findActiveMembership(
       request.userId,
       request.organizationId

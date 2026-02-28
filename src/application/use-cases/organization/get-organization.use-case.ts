@@ -6,8 +6,10 @@
 import { IOrganizationRepository } from '../../../domain/repositories/organization.repository.interface.js';
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
 import { OrganizationResponseDto } from '../../dtos/organization/organization.dto.js';
-import { OrganizationNotFoundError } from '../../../domain/errors/organization.errors.js';
+import { OrganizationNotFoundError, InvalidOrganizationIdError } from '../../../domain/errors/organization.errors.js';
 import { UnauthorizedError } from '../../../domain/errors/authorization.errors.js';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface GetOrganizationDependencies {
   readonly organizationRepository: IOrganizationRepository;
@@ -25,7 +27,12 @@ export class GetOrganizationUseCase {
     organizationId: string,
     executorId: string
   ): Promise<OrganizationResponseDto> {
-    // 1. Find organization
+    // 1. Validate UUID format
+    if (!UUID_REGEX.test(organizationId)) {
+      throw new InvalidOrganizationIdError(organizationId);
+    }
+
+    // 2. Find organization
     const organization = await this.deps.organizationRepository.findById(organizationId);
     if (!organization) {
       throw new OrganizationNotFoundError(organizationId);
@@ -42,17 +49,29 @@ export class GetOrganizationUseCase {
     }
 
     // 3. Return response
-    return {
+    const response: any = {
       id: organization.id,
       name: organization.name,
       type: organization.type.getValue(),
-      description: organization.description ?? undefined,
-      address: organization.address ?? undefined,
-      contactEmail: organization.contactEmail ?? undefined,
-      contactPhone: organization.contactPhone ?? undefined,
       active: organization.active,
       createdAt: organization.createdAt,
       updatedAt: organization.updatedAt,
     };
+
+    // Only add optional fields if they have values
+    if (organization.description !== null) {
+      response.description = organization.description;
+    }
+    if (organization.address !== null) {
+      response.address = organization.address;
+    }
+    if (organization.contactEmail !== null) {
+      response.contactEmail = organization.contactEmail;
+    }
+    if (organization.contactPhone !== null) {
+      response.contactPhone = organization.contactPhone;
+    }
+
+    return response;
   }
 }

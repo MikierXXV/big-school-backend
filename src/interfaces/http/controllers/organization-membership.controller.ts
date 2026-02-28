@@ -100,23 +100,23 @@ export class OrganizationMembershipController {
    * Maneja DELETE /organizations/:organizationId/members/:userId
    *
    * @param request - Request HTTP autenticado
-   * @returns Response HTTP con resultado
+   * @returns Response HTTP con membresía removida
    */
   public async remove(
     request: AuthenticatedRequest
-  ): Promise<HttpResponse<{ message: string }>> {
+  ): Promise<HttpResponse<MembershipResponseDto>> {
     const executorId = request.user!.userId;
     const organizationId = request.params.organizationId || '';
     const userId = request.params.userId || '';
 
     const dto: RemoveMemberRequestDto = { organizationId, userId };
-    await this.deps.removeUserFromOrganizationUseCase.execute(dto, executorId);
+    const result = await this.deps.removeUserFromOrganizationUseCase.execute(dto, executorId);
 
     return {
       statusCode: 200,
       body: {
         success: true,
-        data: { message: 'Member removed successfully' },
+        data: result,
       },
     };
   }
@@ -163,9 +163,18 @@ export class OrganizationMembershipController {
     const executorId = request.user!.userId;
     const organizationId = request.params.organizationId || '';
 
+    // Extract query parameters
+    const rawQuery = request.query || {};
+    const options = {
+      ...(rawQuery.page && { page: parseInt(rawQuery.page as string, 10) }),
+      ...(rawQuery.limit && { limit: parseInt(rawQuery.limit as string, 10) }),
+      ...(rawQuery.role && { role: rawQuery.role as string }),
+    };
+
     const result = await this.deps.getOrganizationMembersUseCase.execute(
       organizationId,
-      executorId
+      executorId,
+      options
     );
 
     return {
@@ -189,7 +198,14 @@ export class OrganizationMembershipController {
     const executorId = request.user!.userId;
     const userId = request.params.userId || '';
 
-    const result = await this.deps.getUserOrganizationsUseCase.execute(userId, executorId);
+    // Extract query parameters
+    const rawQuery = request.query || {};
+    const options = {
+      ...(rawQuery.page && { page: parseInt(rawQuery.page as string, 10) }),
+      ...(rawQuery.limit && { limit: parseInt(rawQuery.limit as string, 10) }),
+    };
+
+    const result = await this.deps.getUserOrganizationsUseCase.execute(userId, executorId, options);
 
     return {
       statusCode: 200,
