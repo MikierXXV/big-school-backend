@@ -175,4 +175,67 @@ describe('DI Container', () => {
       expect(container.hashingService).toBeDefined();
     });
   });
+
+  describe('Container - RBAC Integration (Feature 012)', () => {
+    it('should register organization repository', () => {
+      const container = createContainer();
+      expect(container.organizationRepository).toBeDefined();
+      expect(typeof container.organizationRepository.save).toBe('function');
+      expect(typeof container.organizationRepository.findById).toBe('function');
+    });
+
+    it('should register organization membership repository', () => {
+      const container = createContainer();
+      expect(container.organizationMembershipRepository).toBeDefined();
+      expect(typeof container.organizationMembershipRepository.save).toBe('function');
+    });
+
+    it('should register admin permission repository', () => {
+      const container = createContainer();
+      expect(container.adminPermissionRepository).toBeDefined();
+      expect(typeof container.adminPermissionRepository.grant).toBe('function');
+    });
+
+    it('should register authorization service', () => {
+      const container = createContainer();
+      expect(container.authorizationService).toBeDefined();
+      expect(typeof container.authorizationService.isSuperAdmin).toBe('function');
+    });
+
+    it('should register admin controller', () => {
+      const container = createContainer();
+      expect(container.adminController).toBeDefined();
+      expect(typeof container.adminController.promote).toBe('function');
+      expect(typeof container.adminController.demote).toBe('function');
+      expect(typeof container.adminController.grantPermission).toBe('function');
+      expect(typeof container.adminController.revokePermission).toBe('function');
+      expect(typeof container.adminController.getPermissions).toBe('function');
+    });
+
+    it('should register organization controller', () => {
+      const container = createContainer();
+      expect(container.organizationController).toBeDefined();
+      expect(typeof container.organizationController.create).toBe('function');
+      expect(typeof container.organizationController.getById).toBe('function');
+      expect(typeof container.organizationController.list).toBe('function');
+      expect(typeof container.organizationController.update).toBe('function');
+      expect(typeof container.organizationController.delete).toBe('function');
+    });
+
+    it('should register organization membership controller', () => {
+      const container = createContainer();
+      expect(container.organizationMembershipController).toBeDefined();
+      expect(typeof container.organizationMembershipController.assign).toBe('function');
+      expect(typeof container.organizationMembershipController.remove).toBe('function');
+      expect(typeof container.organizationMembershipController.changeRole).toBe('function');
+      expect(typeof container.organizationMembershipController.getMembers).toBe('function');
+      expect(typeof container.organizationMembershipController.getUserOrganizations).toBe('function');
+    });
+
+    it('should register authorization middleware', () => {
+      const container = createContainer();
+      expect(container.authorizationMiddleware).toBeDefined();
+      expect(typeof container.authorizationMiddleware.checkPermission).toBe('function');
+    });
+  });
 });

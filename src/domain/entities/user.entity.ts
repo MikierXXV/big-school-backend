@@ -33,6 +33,7 @@
 import { UserId } from '../value-objects/user-id.value-object.js';
 import { Email } from '../value-objects/email.value-object.js';
 import { PasswordHash } from '../value-objects/password-hash.value-object.js';
+import { SystemRole } from '../value-objects/system-role.value-object.js';
 
 /**
  * Estado del usuario en el sistema
@@ -58,6 +59,7 @@ export interface UserProps {
   readonly firstName: string;
   readonly lastName: string;
   readonly status: UserStatus;
+  readonly systemRole: SystemRole;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly lastLoginAt: Date | null;
@@ -78,6 +80,7 @@ export interface CreateUserData {
   readonly passwordHash: PasswordHash;
   readonly firstName: string;
   readonly lastName: string;
+  readonly systemRole?: SystemRole;
 }
 
 /**
@@ -143,6 +146,7 @@ export class User {
       firstName: data.firstName,
       lastName: data.lastName,
       status: UserStatus.PENDING_VERIFICATION,
+      systemRole: data.systemRole || SystemRole.USER(),
       createdAt: now,
       updatedAt: now,
       lastLoginAt: null,
@@ -210,6 +214,11 @@ export class User {
   /** Obtiene el estado del usuario */
   public get status(): UserStatus {
     return this._props.status;
+  }
+
+  /** Obtiene el rol del sistema del usuario */
+  public get systemRole(): SystemRole {
+    return this._props.systemRole;
   }
 
   /** Obtiene la fecha de creación */
@@ -291,6 +300,30 @@ export class User {
    */
   public isActive(): boolean {
     return this._props.status === UserStatus.ACTIVE;
+  }
+
+  /**
+   * Verifica si el usuario es SUPER_ADMIN.
+   * @returns true si tiene rol super_admin
+   */
+  public isSuperAdmin(): boolean {
+    return this._props.systemRole.isSuperAdmin();
+  }
+
+  /**
+   * Verifica si el usuario es ADMIN.
+   * @returns true si tiene rol admin
+   */
+  public isAdmin(): boolean {
+    return this._props.systemRole.isAdmin();
+  }
+
+  /**
+   * Verifica si el usuario es USER (rol estándar).
+   * @returns true si tiene rol user
+   */
+  public isUser(): boolean {
+    return this._props.systemRole.isUser();
   }
 
   /**
@@ -398,6 +431,24 @@ export class User {
       ...this._props,
       status: UserStatus.ACTIVE,
       updatedAt: reactivatedAt,
+    };
+
+    return new User(newProps);
+  }
+
+  /**
+   * Changes the user's system role.
+   * Feature 012: RBAC + Organizations
+   *
+   * @param newRole - New system role
+   * @param updatedAt - Date of role change
+   * @returns Nueva instancia con rol actualizado
+   */
+  public changeSystemRole(newRole: SystemRole, updatedAt: Date): User {
+    const newProps: UserProps = {
+      ...this._props,
+      systemRole: newRole,
+      updatedAt,
     };
 
     return new User(newProps);

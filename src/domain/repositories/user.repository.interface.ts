@@ -115,6 +115,17 @@ export interface UserRepository {
    * TODO: Implementar en infraestructura
    */
   findAll(options: PaginationOptions): Promise<PaginatedResult<User>>;
+
+  /**
+   * Busca usuarios por su rol de sistema.
+   * Útil para listar administradores.
+   *
+   * @param systemRoles - Array de roles a buscar
+   * @returns Promise con array de usuarios con los roles especificados
+   *
+   * TODO: Implementar en infraestructura
+   */
+  findBySystemRole(systemRoles: string[]): Promise<User[]>;
 }
 
 /**

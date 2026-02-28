@@ -166,6 +166,19 @@ export class InMemoryUserRepository implements UserRepository {
     };
   }
 
+  /**
+   * Busca usuarios por su rol de sistema.
+   *
+   * @param systemRoles - Array de roles a buscar
+   * @returns Array de usuarios con los roles especificados
+   */
+  public async findBySystemRole(systemRoles: string[]): Promise<User[]> {
+    const allUsers = Array.from(this.users.values());
+    return allUsers.filter((user) =>
+      systemRoles.includes(user.systemRole.getValue())
+    );
+  }
+
   // ============================================
   // TEST HELPERS (solo para tests)
   // ============================================

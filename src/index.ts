@@ -22,6 +22,7 @@ import dotenv from 'dotenv';
 import { Server } from 'http';
 import { createContainer } from './infrastructure/container/container.js';
 import { createApp } from './interfaces/http/app.factory.js';
+import { seedSuperAdmin } from './infrastructure/database/seed-super-admin.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -48,7 +49,20 @@ async function main(): Promise<void> {
   });
 
   // ============================================
-  // 2. CREATE EXPRESS APPLICATION
+  // 2. SEED SUPER ADMIN (if not exists)
+  // ============================================
+  if (config.server.environment !== 'test') {
+    await seedSuperAdmin(
+      container.userRepository,
+      container.adminPermissionRepository,
+      container.hashingService,
+      container.uuidGenerator,
+      logger
+    );
+  }
+
+  // ============================================
+  // 3. CREATE EXPRESS APPLICATION
   // ============================================
   const app = createApp({
     logger,
@@ -61,12 +75,16 @@ async function main(): Promise<void> {
     verifyEmailUseCase: container.verifyEmailUseCase,
     requestPasswordResetUseCase: container.requestPasswordResetUseCase,
     confirmPasswordResetUseCase: container.confirmPasswordResetUseCase,
+    adminController: container.adminController,
+    organizationController: container.organizationController,
+    organizationMembershipController: container.organizationMembershipController,
+    authorizationMiddleware: container.authorizationMiddleware,
     isProduction: config.server.isProduction,
     version: process.env.npm_package_version || '1.0.0',
   });
 
   // ============================================
-  // 3. START HTTP SERVER
+  // 4. START HTTP SERVER
   // ============================================
   const { port, host } = config.server;
 
@@ -89,7 +107,7 @@ async function main(): Promise<void> {
   });
 
   // ============================================
-  // 4. GRACEFUL SHUTDOWN HANDLERS
+  // 5. GRACEFUL SHUTDOWN HANDLERS
   // ============================================
   const shutdown = (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);

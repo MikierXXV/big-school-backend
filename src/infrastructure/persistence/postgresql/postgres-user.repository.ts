@@ -34,6 +34,7 @@ import { User, UserStatus, UserProps } from '../../../domain/entities/user.entit
 import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
 import { Email } from '../../../domain/value-objects/email.value-object.js';
 import { PasswordHash } from '../../../domain/value-objects/password-hash.value-object.js';
+import { SystemRole } from '../../../domain/value-objects/system-role.value-object.js';
 
 /**
  * Fila de la tabla users (representación de BD).
@@ -45,6 +46,7 @@ interface UserRow {
   first_name: string;
   last_name: string;
   status: string;
+  system_role: string;
   created_at: Date;
   updated_at: Date;
   last_login_at: Date | null;
@@ -83,9 +85,9 @@ export class PostgresUserRepository implements UserRepository {
     const query = `
       INSERT INTO users (
         id, email, password_hash, first_name, last_name,
-        status, created_at, updated_at, last_login_at, email_verified_at,
+        status, system_role, created_at, updated_at, last_login_at, email_verified_at,
         failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     `;
 
     await this.pool.query(query, [
@@ -95,6 +97,7 @@ export class PostgresUserRepository implements UserRepository {
       user.firstName,
       user.lastName,
       user.status,
+      user.systemRole.getValue(),
       user.createdAt,
       user.updatedAt,
       user.lastLoginAt,
@@ -119,13 +122,14 @@ export class PostgresUserRepository implements UserRepository {
         first_name = $4,
         last_name = $5,
         status = $6,
-        updated_at = $7,
-        last_login_at = $8,
-        email_verified_at = $9,
-        failed_login_attempts = $10,
-        lockout_until = $11,
-        lockout_count = $12,
-        last_failed_login_at = $13
+        system_role = $7,
+        updated_at = $8,
+        last_login_at = $9,
+        email_verified_at = $10,
+        failed_login_attempts = $11,
+        lockout_until = $12,
+        lockout_count = $13,
+        last_failed_login_at = $14
       WHERE id = $1
     `;
 
@@ -136,6 +140,7 @@ export class PostgresUserRepository implements UserRepository {
       user.firstName,
       user.lastName,
       user.status,
+      user.systemRole.getValue(),
       user.updatedAt,
       user.lastLoginAt,
       user.emailVerifiedAt,
@@ -174,7 +179,7 @@ export class PostgresUserRepository implements UserRepository {
   public async findById(id: UserId): Promise<User | null> {
     const query = `
       SELECT id, email, password_hash, first_name, last_name,
-             status, created_at, updated_at, last_login_at, email_verified_at,
+             status, system_role, created_at, updated_at, last_login_at, email_verified_at,
              failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
       WHERE id = $1
@@ -199,7 +204,7 @@ export class PostgresUserRepository implements UserRepository {
   public async findByEmail(email: Email): Promise<User | null> {
     const query = `
       SELECT id, email, password_hash, first_name, last_name,
-             status, created_at, updated_at, last_login_at, email_verified_at,
+             status, system_role, created_at, updated_at, last_login_at, email_verified_at,
              failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
       WHERE email = $1
@@ -247,7 +252,7 @@ export class PostgresUserRepository implements UserRepository {
     // Query para datos
     const dataQuery = `
       SELECT id, email, password_hash, first_name, last_name,
-             status, created_at, updated_at, last_login_at, email_verified_at,
+             status, system_role, created_at, updated_at, last_login_at, email_verified_at,
              failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
       ORDER BY ${sortColumn} ${order}
@@ -279,6 +284,34 @@ export class PostgresUserRepository implements UserRepository {
   }
 
   /**
+   * Busca usuarios por su rol de sistema.
+   *
+   * @param systemRoles - Array de roles a buscar
+   * @returns Array de usuarios con los roles especificados
+   */
+  public async findBySystemRole(systemRoles: string[]): Promise<User[]> {
+    if (systemRoles.length === 0) {
+      return [];
+    }
+
+    // Create placeholders for the IN clause ($1, $2, etc.)
+    const placeholders = systemRoles.map((_, index) => `$${index + 1}`).join(', ');
+
+    const query = `
+      SELECT id, email, password_hash, first_name, last_name,
+             status, system_role, created_at, updated_at, last_login_at, email_verified_at,
+             failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
+      FROM users
+      WHERE system_role IN (${placeholders})
+      ORDER BY created_at DESC
+    `;
+
+    const result = await this.pool.query<UserRow>(query, systemRoles);
+
+    return result.rows.map((row) => this.rowToEntity(row));
+  }
+
+  /**
    * Convierte una fila de BD a entidad User.
    *
    * @param row - Fila de la tabla users
@@ -292,6 +325,7 @@ export class PostgresUserRepository implements UserRepository {
       firstName: row.first_name,
       lastName: row.last_name,
       status: row.status as UserStatus,
+      systemRole: SystemRole.create(row.system_role),
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
