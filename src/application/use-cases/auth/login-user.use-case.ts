@@ -185,6 +185,7 @@ export class LoginUserUseCase {
         lastName: user.lastName,
         fullName: user.fullName,
         status: user.status,
+        systemRole: user.systemRole.getValue(),
         emailVerified: user.isEmailVerified(),
         lastLoginAt: updatedUser.lastLoginAt ? this.deps.dateTimeService.toLocalString(updatedUser.lastLoginAt) : null,
       },

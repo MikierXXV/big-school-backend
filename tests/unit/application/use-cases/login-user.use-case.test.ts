@@ -28,6 +28,7 @@ import { IUuidGenerator } from '../../../../src/application/ports/uuid-generator
 import { IDateTimeService } from '../../../../src/application/ports/datetime.service.port.js';
 import { ILogger } from '../../../../src/application/ports/logger.port.js';
 import { User, UserStatus } from '../../../../src/domain/entities/user.entity.js';
+import { SystemRole } from '../../../../src/domain/value-objects/system-role.value-object.js';
 import { UserId } from '../../../../src/domain/value-objects/user-id.value-object.js';
 import { Email } from '../../../../src/domain/value-objects/email.value-object.js';
 import { PasswordHash } from '../../../../src/domain/value-objects/password-hash.value-object.js';
@@ -109,6 +110,7 @@ describe('LoginUser Use Case', () => {
       firstName: 'John',
       lastName: 'Doe',
       status: UserStatus.ACTIVE,
+      systemRole: SystemRole.USER(),
       createdAt: new Date('2024-01-01T10:00:00Z'),
       updatedAt: new Date('2024-01-15T09:50:00Z'),
       lastLoginAt: new Date('2024-01-14T10:00:00Z'),
@@ -129,6 +131,7 @@ describe('LoginUser Use Case', () => {
       firstName: 'John',
       lastName: 'Doe',
       status: UserStatus.ACTIVE,
+      systemRole: SystemRole.USER(),
       createdAt: new Date('2024-01-01T10:00:00Z'),
       updatedAt: new Date('2024-01-15T09:00:00Z'),
       lastLoginAt: new Date('2024-01-14T10:00:00Z'),
@@ -292,6 +295,37 @@ describe('LoginUser Use Case', () => {
         expect(updatedUser.lastLoginAt).not.toBeNull();
       });
 
+      it('should return systemRole "user" for regular users', async () => {
+        const result = await useCase.execute(validRequest);
+
+        expect(result.user.systemRole).toBe('user');
+      });
+
+      it('should return systemRole "super_admin" for super admin users', async () => {
+        const superAdminUser = User.fromPersistence({
+          id: UserId.create(VALID_UUID),
+          email: Email.create(VALID_EMAIL),
+          passwordHash: PasswordHash.fromHash(VALID_HASH),
+          firstName: 'John',
+          lastName: 'Doe',
+          status: UserStatus.ACTIVE,
+          systemRole: SystemRole.SUPER_ADMIN(),
+          createdAt: new Date('2024-01-01T10:00:00Z'),
+          updatedAt: new Date('2024-01-15T09:00:00Z'),
+          lastLoginAt: new Date('2024-01-14T10:00:00Z'),
+          emailVerifiedAt: new Date('2024-01-01T12:00:00Z'),
+          failedLoginAttempts: 0,
+          lockoutUntil: null,
+          lockoutCount: 0,
+          lastFailedLoginAt: null,
+        });
+        (mockUserRepository.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(superAdminUser);
+
+        const result = await useCase.execute(validRequest);
+
+        expect(result.user.systemRole).toBe('super_admin');
+      });
+
       it('should include device info in refresh token if provided', async () => {
         await useCase.execute(validRequest);
 
@@ -358,6 +392,7 @@ describe('LoginUser Use Case', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.DEACTIVATED,
+          systemRole: SystemRole.USER(),
           createdAt: new Date(),
           updatedAt: new Date(),
           lastLoginAt: null,
@@ -487,6 +522,7 @@ describe('LoginUser Use Case', () => {
           firstName: 'John',
           lastName: 'Doe',
           status: UserStatus.ACTIVE,
+          systemRole: SystemRole.USER(),
           createdAt: new Date('2024-01-01T10:00:00Z'),
           updatedAt: new Date('2024-01-15T09:00:00Z'),
           lastLoginAt: new Date('2024-01-14T10:00:00Z'),

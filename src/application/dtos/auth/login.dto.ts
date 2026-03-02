@@ -95,6 +95,11 @@ export interface AuthenticatedUserDto {
   readonly status: string;
 
   /**
+   * Rol de sistema del usuario.
+   */
+  readonly systemRole: string;
+
+  /**
    * ¿Email verificado?
    */
   readonly emailVerified: boolean;
