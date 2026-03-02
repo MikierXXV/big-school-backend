@@ -27,6 +27,8 @@ import { GrantAdminPermissionUseCase } from '../../../application/use-cases/admi
 import { RevokeAdminPermissionUseCase } from '../../../application/use-cases/admin/revoke-admin-permission.use-case.js';
 import { GetAdminPermissionsUseCase } from '../../../application/use-cases/admin/get-admin-permissions.use-case.js';
 import { ListAdminsUseCase } from '../../../application/use-cases/admin/list-admins.use-case.js';
+import { ListUsersUseCase } from '../../../application/use-cases/user/list-users.use-case.js';
+import type { ListUsersResponseDto } from '../../../application/dtos/user/list-users.dto.js';
 import {
   PromoteToAdminRequestDto,
   DemoteToUserRequestDto,
@@ -48,6 +50,7 @@ export interface AdminControllerDependencies {
   readonly revokeAdminPermissionUseCase: RevokeAdminPermissionUseCase;
   readonly getAdminPermissionsUseCase: GetAdminPermissionsUseCase;
   readonly listAdminsUseCase: ListAdminsUseCase;
+  readonly listUsersUseCase: ListUsersUseCase;
 }
 
 /**
@@ -200,6 +203,36 @@ export class AdminController {
     const executorId = request.user!.userId;
 
     const result = await this.deps.listAdminsUseCase.execute(executorId);
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja GET /users
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con lista paginada de usuarios
+   */
+  public async listUsers(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<ListUsersResponseDto>> {
+    const executorId = request.user!.userId;
+    const page = request.query.page ? parseInt(request.query.page, 10) : 1;
+    const limit = request.query.limit ? parseInt(request.query.limit, 10) : 20;
+    const search = request.query.search || undefined;
+
+    const result = await this.deps.listUsersUseCase.execute({
+      executorId,
+      page,
+      limit,
+      search,
+    });
 
     return {
       statusCode: 200,

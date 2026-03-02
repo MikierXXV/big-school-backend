@@ -116,6 +116,15 @@ export function createRBACRoutes(
   );
 
   // ============================================
+  // User Routes (require SUPER_ADMIN or manage_users)
+  // ============================================
+  router.get(
+    '/users',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'listUsers')
+  );
+
+  // ============================================
   // Organization Routes
   // ============================================
   router.post(

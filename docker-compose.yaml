@@ -58,6 +58,8 @@ services:
       # Rate limiting - Using production values
       # Auth: 5 requests per minute per IP
       # Global: 100 requests per 15 minutes per IP
+     
+
     ports:
       - "3000:3000"
     volumes:
