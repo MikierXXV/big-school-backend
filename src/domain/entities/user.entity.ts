@@ -55,7 +55,11 @@ export enum UserStatus {
 export interface UserProps {
   readonly id: UserId;
   readonly email: Email;
-  readonly passwordHash: PasswordHash;
+  /**
+   * Hash de la contraseña. Puede ser null para usuarios creados
+   * exclusivamente via OAuth (no tienen password propio).
+   */
+  readonly passwordHash: PasswordHash | null;
   readonly firstName: string;
   readonly lastName: string;
   readonly status: UserStatus;
@@ -72,7 +76,7 @@ export interface UserProps {
 }
 
 /**
- * Datos para crear un nuevo usuario (registro)
+ * Datos para crear un nuevo usuario (registro email/password)
  */
 export interface CreateUserData {
   readonly id: UserId;
@@ -80,6 +84,19 @@ export interface CreateUserData {
   readonly passwordHash: PasswordHash;
   readonly firstName: string;
   readonly lastName: string;
+  readonly systemRole?: SystemRole;
+}
+
+/**
+ * Datos para crear un usuario via OAuth (sin contraseña propia).
+ * El usuario se crea ACTIVE y con email verificado.
+ */
+export interface CreateOAuthUserData {
+  readonly id: UserId;
+  readonly email: Email;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly verifiedAt: Date;
   readonly systemRole?: SystemRole;
 }
 
@@ -167,6 +184,36 @@ export class User {
   }
 
   /**
+   * Crea un usuario via OAuth (sin contraseña).
+   * El usuario se crea directamente como ACTIVE y con email verificado
+   * porque el proveedor OAuth ya realizó esa verificación.
+   *
+   * @param data - Datos del usuario provenientes del proveedor OAuth
+   * @returns Nueva instancia de User lista para login
+   */
+  public static createOAuth(data: CreateOAuthUserData): User {
+    const props: UserProps = {
+      id: data.id,
+      email: data.email,
+      passwordHash: null,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      status: UserStatus.ACTIVE,
+      systemRole: data.systemRole || SystemRole.USER(),
+      createdAt: data.verifiedAt,
+      updatedAt: data.verifiedAt,
+      lastLoginAt: null,
+      emailVerifiedAt: data.verifiedAt,
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      lockoutCount: 0,
+      lastFailedLoginAt: null,
+    };
+
+    return new User(props);
+  }
+
+  /**
    * Reconstruye un usuario desde persistencia.
    * NO emite eventos de dominio.
    *
@@ -191,8 +238,11 @@ export class User {
     return this._props.email;
   }
 
-  /** Obtiene el hash de la contraseña */
-  public get passwordHash(): PasswordHash {
+  /**
+   * Obtiene el hash de la contraseña.
+   * Puede ser null para usuarios creados exclusivamente via OAuth.
+   */
+  public get passwordHash(): PasswordHash | null {
     return this._props.passwordHash;
   }
 

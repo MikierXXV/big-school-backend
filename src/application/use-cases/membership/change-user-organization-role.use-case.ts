@@ -78,6 +78,9 @@ export class ChangeUserOrganizationRoleUseCase {
       role: updatedMembership.role.getValue(),
       joinedAt: updatedMembership.joinedAt,
       isActive: updatedMembership.isActive(),
+      email: '',
+      firstName: '',
+      lastName: '',
     };
   }
 }

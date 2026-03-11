@@ -78,7 +78,15 @@ import { loadJwtConfig, JwtConfig } from '../config/jwt.config.js';
 import { AdminController } from '../../interfaces/http/controllers/admin.controller.js';
 import { OrganizationController } from '../../interfaces/http/controllers/organization.controller.js';
 import { OrganizationMembershipController } from '../../interfaces/http/controllers/organization-membership.controller.js';
+import { OAuthController } from '../../interfaces/http/controllers/oauth.controller.js';
 import { AuthorizationMiddleware } from '../../interfaces/http/middlewares/authorization.middleware.js';
+
+import { IOAuthConnectionRepository } from '../../domain/repositories/oauth-connection.repository.interface.js';
+import { InMemoryOAuthConnectionRepository } from '../persistence/in-memory/in-memory-oauth-connection.repository.js';
+import { OAuthProviderService } from '../services/oauth-provider.service.js';
+import { InitiateOAuthUseCase } from '../../application/use-cases/auth/initiate-oauth.use-case.js';
+import { HandleOAuthCallbackUseCase } from '../../application/use-cases/auth/handle-oauth-callback.use-case.js';
+import { loadOAuthConfig, OAuthConfig } from '../config/oauth.config.js';
 
 /**
  * Configuración del contenedor.
@@ -117,6 +125,10 @@ export interface AppContainer {
   readonly requestPasswordResetUseCase: RequestPasswordResetUseCase;
   readonly confirmPasswordResetUseCase: ConfirmPasswordResetUseCase;
 
+  // OAuth
+  readonly oauthConnectionRepository: IOAuthConnectionRepository;
+  readonly oauthController: OAuthController;
+
   // Controllers
   readonly adminController: AdminController;
   readonly organizationController: OrganizationController;
@@ -127,6 +139,7 @@ export interface AppContainer {
 
   // Config
   readonly config: ContainerConfig;
+  readonly oauthConfig: OAuthConfig;
 }
 
 /**
@@ -379,6 +392,49 @@ export function createContainer(): AppContainer {
   });
 
   // ============================================
+  // OAuth (Feature 013)
+  // ============================================
+  let oauthConfig: OAuthConfig;
+  try {
+    oauthConfig = loadOAuthConfig();
+  } catch {
+    // If OAuth env vars are not configured, use a placeholder config.
+    // OAuth endpoints will fail gracefully at runtime with proper errors.
+    logger.warn('OAuth environment variables not fully configured. OAuth login will be unavailable.');
+    oauthConfig = {
+      google: { clientId: '', clientSecret: '', scopes: ['openid', 'email', 'profile'] },
+      microsoft: { clientId: '', clientSecret: '', tenantId: 'common', scopes: ['openid', 'email', 'profile', 'User.Read'] },
+      stateSecret: 'placeholder-secret-replace-in-production-env-32c',
+      stateExpiresInSeconds: 300,
+    };
+  }
+
+  const oauthConnectionRepository = new InMemoryOAuthConnectionRepository();
+  const oauthProviderService = new OAuthProviderService(oauthConfig);
+
+  const initiateOAuthUseCase = new InitiateOAuthUseCase({
+    oauthProviderService,
+    logger: logger.child({ useCase: 'InitiateOAuth' }),
+  });
+
+  const handleOAuthCallbackUseCase = new HandleOAuthCallbackUseCase({
+    userRepository,
+    refreshTokenRepository,
+    oauthConnectionRepository,
+    oauthProviderService,
+    tokenService,
+    uuidGenerator,
+    dateTimeService,
+    logger: logger.child({ useCase: 'HandleOAuthCallback' }),
+  });
+
+  const oauthController = new OAuthController({
+    initiateOAuthUseCase,
+    handleOAuthCallbackUseCase,
+    oauthProviderService,
+  });
+
+  // ============================================
   // RBAC Controllers (Feature 012)
   // ============================================
   const adminController = new AdminController({
@@ -441,6 +497,10 @@ export function createContainer(): AppContainer {
     requestPasswordResetUseCase,
     confirmPasswordResetUseCase,
 
+    // OAuth
+    oauthConnectionRepository,
+    oauthController,
+
     // Controllers
     adminController,
     organizationController,
@@ -454,5 +514,6 @@ export function createContainer(): AppContainer {
       server: envConfig.server,
       jwt: jwtConfig,
     },
+    oauthConfig,
   };
 }

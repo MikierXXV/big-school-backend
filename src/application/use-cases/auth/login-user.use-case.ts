@@ -120,6 +120,14 @@ export class LoginUserUseCase {
     }
 
     // 6. Verificar contraseña
+    // Si el usuario fue creado exclusivamente via OAuth, no tiene passwordHash
+    if (!user.passwordHash) {
+      this.deps.logger.warn('Login failed: OAuth-only user attempted password login', {
+        userId: user.id.value,
+      });
+      throw new InvalidCredentialsError();
+    }
+
     const isPasswordValid = await this.deps.hashingService.verify(
       request.password,
       user.passwordHash

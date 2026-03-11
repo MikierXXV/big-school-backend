@@ -45,7 +45,12 @@ import { IRateLimiter } from '../../application/ports/rate-limiter.port.js';
 import { AdminController } from './controllers/admin.controller.js';
 import { OrganizationController } from './controllers/organization.controller.js';
 import { OrganizationMembershipController } from './controllers/organization-membership.controller.js';
+import { OAuthController } from './controllers/oauth.controller.js';
 import { AuthorizationMiddleware } from './middlewares/authorization.middleware.js';
+import {
+  validateOAuthCallbackRequest,
+  validateInitiateOAuthRequest,
+} from './validators/oauth.validators.js';
 
 /**
  * Dependencias requeridas para crear la aplicación.
@@ -64,6 +69,7 @@ export interface AppDependencies {
   adminController: AdminController;
   organizationController: OrganizationController;
   organizationMembershipController: OrganizationMembershipController;
+  oauthController: OAuthController;
   authorizationMiddleware: AuthorizationMiddleware;
   isProduction?: boolean;
   version?: string;
@@ -212,6 +218,36 @@ export function createApp(deps: AppDependencies): Express {
     createExpressRateLimitMiddleware(authRateLimitMiddleware),
     createValidationMiddleware(validateConfirmPasswordResetRequest),
     adaptRoute(authController, 'confirmPasswordReset')
+  );
+
+  // ============================================
+  // OAuth Routes (Feature 013)
+  // ============================================
+
+  // GET /auth/oauth/:provider/authorize?redirect_uri=...
+  app.get(
+    '/auth/oauth/:provider/authorize',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
+    (req: Request, res: Response, next: NextFunction): void => {
+      const result = validateInitiateOAuthRequest(req.query);
+      if (!result.isValid) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Validation failed', details: result.errors },
+        });
+        return;
+      }
+      next();
+    },
+    adaptRoute(deps.oauthController, 'initiateOAuth')
+  );
+
+  // POST /auth/oauth/callback
+  app.post(
+    '/auth/oauth/callback',
+    createExpressRateLimitMiddleware(authRateLimitMiddleware),
+    createValidationMiddleware(validateOAuthCallbackRequest),
+    adaptRoute(deps.oauthController, 'handleOAuthCallback')
   );
 
   // ============================================

@@ -55,11 +55,9 @@ export class DeleteOrganizationUseCase {
       name: organization.name,
       type: organization.type.getValue(),
       active: deletedOrganization?.active ?? false,
-      contactInfo: {
-        email: organization.contactEmail || null,
-        phone: organization.contactPhone || null,
-        address: organization.address || null,
-      },
+      ...(organization.contactEmail ? { contactEmail: organization.contactEmail } : {}),
+      ...(organization.contactPhone ? { contactPhone: organization.contactPhone } : {}),
+      ...(organization.address ? { address: organization.address } : {}),
       createdAt: organization.createdAt,
       updatedAt: organization.updatedAt,
     };

@@ -36,10 +36,17 @@ services:
       dockerfile: Dockerfile.dev
     container_name: big_school_backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       NODE_ENV: development
       PORT: 3000
       HOST: "0.0.0.0"
+      # SUPER ADMIN
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD}
+      SUPER_ADMIN_FIRST_NAME: ${SUPER_ADMIN_FIRST_NAME}
+      SUPER_ADMIN_LAST_NAME: ${SUPER_ADMIN_LAST_NAME}
       # Database
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
@@ -58,7 +65,7 @@ services:
       # Rate limiting - Using production values
       # Auth: 5 requests per minute per IP
       # Global: 100 requests per 15 minutes per IP
-     
+
 
     ports:
       - "3000:3000"
