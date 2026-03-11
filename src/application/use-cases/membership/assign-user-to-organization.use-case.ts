@@ -96,11 +96,9 @@ export class AssignUserToOrganizationUseCase {
       role: membership.role.getValue(),
       joinedAt: membership.joinedAt,
       isActive: membership.isActive(),
-      user: {
-        email: user.email.value,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
+      email: user.email.value,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
   }
 }

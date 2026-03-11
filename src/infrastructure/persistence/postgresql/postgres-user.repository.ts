@@ -42,7 +42,7 @@ import { SystemRole } from '../../../domain/value-objects/system-role.value-obje
 interface UserRow {
   id: string;
   email: string;
-  password_hash: string;
+  password_hash: string | null;
   first_name: string;
   last_name: string;
   status: string;
@@ -93,7 +93,7 @@ export class PostgresUserRepository implements UserRepository {
     await this.pool.query(query, [
       user.id.value,
       user.email.value,
-      user.passwordHash.value,
+      user.passwordHash?.value ?? null,
       user.firstName,
       user.lastName,
       user.status,
@@ -136,7 +136,7 @@ export class PostgresUserRepository implements UserRepository {
     const result = await this.pool.query(query, [
       user.id.value,
       user.email.value,
-      user.passwordHash.value,
+      user.passwordHash?.value ?? null,
       user.firstName,
       user.lastName,
       user.status,
@@ -321,7 +321,7 @@ export class PostgresUserRepository implements UserRepository {
     const props: UserProps = {
       id: UserId.create(row.id),
       email: Email.create(row.email),
-      passwordHash: PasswordHash.fromHash(row.password_hash),
+      passwordHash: row.password_hash ? PasswordHash.fromHash(row.password_hash) : null,
       firstName: row.first_name,
       lastName: row.last_name,
       status: row.status as UserStatus,

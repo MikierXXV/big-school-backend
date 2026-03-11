@@ -88,7 +88,7 @@ export class RemoveUserFromOrganizationUseCase {
       organizationId: updatedMembership.organizationId,
       role: updatedMembership.role.getValue(),
       joinedAt: updatedMembership.joinedAt,
-      leftAt: updatedMembership.leftAt,
+      ...(updatedMembership.leftAt != null ? { leftAt: updatedMembership.leftAt } : {}),
       isActive: updatedMembership.isActive(),
       email: user?.email.value || '',
       firstName: user?.firstName || '',

@@ -16,3 +16,4 @@
 export * from './domain.error.js';
 export * from './user.errors.js';
 export * from './authentication.errors.js';
+export * from './oauth.errors.js';

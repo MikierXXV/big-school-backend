@@ -78,6 +78,7 @@ async function main(): Promise<void> {
     adminController: container.adminController,
     organizationController: container.organizationController,
     organizationMembershipController: container.organizationMembershipController,
+    oauthController: container.oauthController,
     authorizationMiddleware: container.authorizationMiddleware,
     isProduction: config.server.isProduction,
     version: process.env.npm_package_version || '1.0.0',
