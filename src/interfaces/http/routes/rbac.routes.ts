@@ -208,7 +208,6 @@ export function createRBACRoutes(
 
   router.get(
     '/users/:userId/organizations',
-    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'view_all_data' }),
     adaptRoute(membershipController, 'getUserOrganizations')
   );
 

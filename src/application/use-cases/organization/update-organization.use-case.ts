@@ -7,7 +7,7 @@ import { IOrganizationRepository } from '../../../domain/repositories/organizati
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
 import { UpdateOrganizationRequestDto, OrganizationResponseDto } from '../../dtos/organization/organization.dto.js';
-import { OrganizationNotFoundError } from '../../../domain/errors/organization.errors.js';
+import { OrganizationNotFoundError, OrganizationAlreadyExistsError } from '../../../domain/errors/organization.errors.js';
 import { InsufficientPermissionsError } from '../../../domain/errors/authorization.errors.js';
 
 export interface UpdateOrganizationDependencies {
@@ -51,7 +51,15 @@ export class UpdateOrganizationUseCase {
       throw new InsufficientPermissionsError('Update organization', executorId);
     }
 
-    // 3. Update organization
+    // 3. Check name uniqueness if name is being changed
+    if (request.name && request.name !== organization.name) {
+      const existing = await this.deps.organizationRepository.findByName(request.name);
+      if (existing && existing.id !== organizationId) {
+        throw new OrganizationAlreadyExistsError(request.name);
+      }
+    }
+
+    // 4. Update organization
     const now = this.deps.dateTimeService.now();
 
     let updatedOrg = organization;
