@@ -53,7 +53,7 @@ export class GetAdminPermissionsUseCase {
     return {
       userId,
       systemRole: targetUser.systemRole.getValue(),
-      grantedPermissions: grants.map(grant => ({
+      permissions: grants.map(grant => ({
         permission: grant.permission.getValue(),
         grantedBy: grant.grantedBy,
         grantedAt: grant.grantedAt,

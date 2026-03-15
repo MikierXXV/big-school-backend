@@ -52,36 +52,53 @@ export class GrantAdminPermissionUseCase {
       throw new UserNotFoundError(request.userId);
     }
 
-    // 2. FIRST: Validate target user is admin (validation - 400 if not)
+    // 2. Early idempotency check: if ALL requested permissions already exist, return current state
+    //    without re-validating admin status (idempotent by design).
+    const requestedPermissions = request.permissions.map(p => AdminPermission.create(p));
+    const allAlreadyGranted = await Promise.all(
+      requestedPermissions.map(p =>
+        this.deps.adminPermissionRepository.hasPermission(request.userId, p)
+      )
+    );
+    if (allAlreadyGranted.every(Boolean)) {
+      const grants = await this.deps.adminPermissionRepository.findByUserId(request.userId);
+      return {
+        userId: request.userId,
+        systemRole: targetUser.systemRole.getValue(),
+        permissions: grants.map(grant => ({
+          permission: grant.permission.getValue(),
+          grantedBy: grant.grantedBy,
+          grantedAt: grant.grantedAt,
+        })),
+      };
+    }
+
+    // 3. Validate target user is admin (validation - 400 if not)
     const systemRole = targetUser.systemRole.getValue();
     if (systemRole !== 'admin' && systemRole !== 'super_admin') {
       throw new InvalidFieldFormatError('userId', 'Must be an admin user');
     }
 
-    // 3. Check target is not SUPER_ADMIN (authorization - 403 if yes)
+    // 4. Check target is not SUPER_ADMIN (authorization - 403 if yes)
     if (targetUser.isSuperAdmin()) {
       throw new CannotModifySuperAdminError();
     }
 
-    // 4. THEN: Verify executor is SUPER_ADMIN (authorization - 403 if not)
+    // 5. Verify executor is SUPER_ADMIN (authorization - 403 if not)
     const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
 
     if (!isSuperAdmin) {
       throw new InsufficientPermissionsError('SUPER_ADMIN role', executorId);
     }
 
-    // 4. For each permission, check if already granted, then grant
-    for (const permissionValue of request.permissions) {
-      const permission = AdminPermission.create(permissionValue);
-
-      // Check if already granted (skip if exists - idempotent)
+    // 6. For each permission, check if already granted, then grant
+    for (const permission of requestedPermissions) {
       const hasPermission = await this.deps.adminPermissionRepository.hasPermission(
         request.userId,
         permission
       );
 
       if (!hasPermission) {
-        // Create and save grant
         const grant = AdminPermissionGrant.create({
           id: this.deps.uuidGenerator.generate(),
           adminUserId: request.userId,
@@ -93,13 +110,13 @@ export class GrantAdminPermissionUseCase {
       }
     }
 
-    // 5. Return all granted permissions
+    // 7. Return all granted permissions
     const grants = await this.deps.adminPermissionRepository.findByUserId(request.userId);
 
     return {
       userId: request.userId,
       systemRole: targetUser.systemRole.getValue(),
-      grantedPermissions: grants.map(grant => ({
+      permissions: grants.map(grant => ({
         permission: grant.permission.getValue(),
         grantedBy: grant.grantedBy,
         grantedAt: grant.grantedAt,
