@@ -33,6 +33,8 @@ export interface UserListItemDto {
   readonly status: string;
   readonly emailVerified: boolean;
   readonly createdAt: string;
+  /** Proveedor de autenticación principal del usuario */
+  readonly authProvider: 'local' | 'google' | 'microsoft';
 }
 
 /**
