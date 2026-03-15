@@ -467,6 +467,22 @@ export class User {
   }
 
   /**
+   * Desactiva un usuario permanentemente (soft delete).
+   *
+   * @param deactivatedAt - Fecha de desactivación
+   * @returns Nueva instancia desactivada
+   */
+  public deactivate(deactivatedAt: Date): User {
+    const newProps: UserProps = {
+      ...this._props,
+      status: UserStatus.DEACTIVATED,
+      updatedAt: deactivatedAt,
+    };
+
+    return new User(newProps);
+  }
+
+  /**
    * Reactiva un usuario suspendido.
    *
    * @param reactivatedAt - Fecha de reactivación
