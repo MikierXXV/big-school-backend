@@ -145,6 +145,7 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
       active?: boolean;
       limit?: number;
       offset?: number;
+      search?: string;
     }
   ): Promise<Organization[]> {
     let orgs = Array.from(this.organizations.values());
@@ -166,6 +167,16 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
     } else {
       // Default: show active only (when active is true or not specified)
       orgs = orgs.filter((org) => org.active === true);
+    }
+
+    // Filter by search term (name or contactEmail)
+    if (options?.search) {
+      const term = options.search.toLowerCase();
+      orgs = orgs.filter(
+        (org) =>
+          org.name.toLowerCase().includes(term) ||
+          (org.contactEmail?.toLowerCase().includes(term) ?? false)
+      );
     }
 
     // Apply pagination

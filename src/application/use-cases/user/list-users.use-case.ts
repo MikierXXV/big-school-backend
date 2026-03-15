@@ -50,6 +50,7 @@ export class ListUsersUseCase {
       limit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      search: request.search,
     });
 
     // 3. Map to response DTO

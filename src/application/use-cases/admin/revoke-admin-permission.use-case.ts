@@ -73,7 +73,7 @@ export class RevokeAdminPermissionUseCase {
     return {
       userId: request.userId,
       systemRole: targetUser.systemRole.getValue(),
-      grantedPermissions: remainingGrants.map(grant => ({
+      permissions: remainingGrants.map(grant => ({
         permission: grant.permission.getValue(),
         grantedBy: grant.grantedBy,
         grantedAt: grant.grantedAt,

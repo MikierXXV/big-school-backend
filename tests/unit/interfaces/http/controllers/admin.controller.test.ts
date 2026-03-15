@@ -259,7 +259,7 @@ describe('AdminController', () => {
     const successResponse = {
       userId: TARGET_USER_ID,
       systemRole: 'admin',
-      grantedPermissions: [
+      permissions: [
         { permission: 'manage_users', grantedBy: EXECUTOR_ID, grantedAt: new Date() },
       ],
     };

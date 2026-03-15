@@ -137,9 +137,21 @@ export class InMemoryUserRepository implements UserRepository {
   public async findAll(
     options: PaginationOptions
   ): Promise<PaginatedResult<User>> {
-    const allUsers = Array.from(this.users.values());
+    let allUsers = Array.from(this.users.values());
+
+    // Filtrar por búsqueda si se especifica
+    if (options.search) {
+      const term = options.search.toLowerCase();
+      allUsers = allUsers.filter(
+        (u) =>
+          u.firstName.toLowerCase().includes(term) ||
+          u.lastName.toLowerCase().includes(term) ||
+          u.email.value.toLowerCase().includes(term)
+      );
+    }
+
     const total = allUsers.length;
-    const totalPages = Math.ceil(total / options.limit);
+    const totalPages = Math.max(1, Math.ceil(total / options.limit));
     const offset = (options.page - 1) * options.limit;
 
     // Ordenar si se especifica

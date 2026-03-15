@@ -56,6 +56,7 @@ export interface IOrganizationRepository {
     active?: boolean;
     limit?: number;
     offset?: number;
+    search?: string;
   }): Promise<Organization[]>;
 
   /**

@@ -73,7 +73,7 @@ export interface AdminPermissionsResponseDto {
   /** Current system role */
   readonly systemRole: string;
   /** List of granted permissions with metadata */
-  readonly grantedPermissions: {
+  readonly permissions: {
     /** Permission name (AdminPermissionValue) */
     readonly permission: string;
     /** User ID who granted this permission */

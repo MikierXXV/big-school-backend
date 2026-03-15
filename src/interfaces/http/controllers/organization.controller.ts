@@ -133,6 +133,7 @@ export class OrganizationController {
       ...(rawQuery.active !== undefined && { active: rawQuery.active === 'true' }),
       ...(rawQuery.page && { page: parseInt(rawQuery.page as string, 10) }),
       ...(rawQuery.limit && { limit: parseInt(rawQuery.limit as string, 10) }),
+      ...(rawQuery.search && { search: rawQuery.search as string }),
     };
 
     const result = await this.deps.listOrganizationsUseCase.execute(query, executorId);

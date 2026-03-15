@@ -140,6 +140,8 @@ export interface PaginationOptions {
   readonly sortBy?: string;
   /** Dirección del orden */
   readonly sortOrder?: 'asc' | 'desc';
+  /** Búsqueda por nombre o email */
+  readonly search?: string;
 }
 
 /**
