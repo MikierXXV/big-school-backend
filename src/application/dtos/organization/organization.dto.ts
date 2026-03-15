@@ -84,6 +84,8 @@ export interface ListOrganizationsQueryDto {
   readonly page?: number;
   /** Number of results per page (optional, default: 10) */
   readonly limit?: number;
+  /** Search by name or contact email (optional) */
+  readonly search?: string;
 }
 
 /**
@@ -98,4 +100,6 @@ export interface ListOrganizationsResponseDto {
   readonly page: number;
   /** Number of items per page */
   readonly limit: number;
+  /** Total number of pages */
+  readonly totalPages: number;
 }

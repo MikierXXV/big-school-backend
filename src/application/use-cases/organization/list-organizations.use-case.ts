@@ -49,6 +49,9 @@ export class ListOrganizationsUseCase {
       if (query.active !== undefined) {
         countParams.active = query.active;
       }
+      if (query.search) {
+        countParams.search = query.search;
+      }
       const allOrgs = await this.deps.organizationRepository.findAll(countParams);
       total = allOrgs.length;
 
@@ -57,6 +60,9 @@ export class ListOrganizationsUseCase {
       const findAllParams: any = { limit, offset };
       if (query.active !== undefined) {
         findAllParams.active = query.active;
+      }
+      if (query.search) {
+        findAllParams.search = query.search;
       }
 
       organizations = await this.deps.organizationRepository.findAll(findAllParams);
@@ -118,7 +124,8 @@ export class ListOrganizationsUseCase {
       organizations: organizationDtos,
       total,
       page,
-      limit
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 }
