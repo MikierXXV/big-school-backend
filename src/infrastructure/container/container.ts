@@ -40,6 +40,7 @@ import { RevokeAdminPermissionUseCase } from '../../application/use-cases/admin/
 import { GetAdminPermissionsUseCase } from '../../application/use-cases/admin/get-admin-permissions.use-case.js';
 import { ListAdminsUseCase } from '../../application/use-cases/admin/list-admins.use-case.js';
 import { ListUsersUseCase } from '../../application/use-cases/user/list-users.use-case.js';
+import { DeleteUserUseCase } from '../../application/use-cases/user/delete-user.use-case.js';
 import { CreateOrganizationUseCase } from '../../application/use-cases/organization/create-organization.use-case.js';
 import { GetOrganizationUseCase } from '../../application/use-cases/organization/get-organization.use-case.js';
 import { ListOrganizationsUseCase } from '../../application/use-cases/organization/list-organizations.use-case.js';
@@ -334,6 +335,12 @@ export function createContainer(): AppContainer {
     oauthConnectionRepository,
   });
 
+  const deleteUserUseCase = new DeleteUserUseCase({
+    userRepository,
+    authorizationService,
+    dateTimeService,
+  });
+
   // ============================================
   // Organization Use Cases (Feature 012)
   // ============================================
@@ -461,6 +468,7 @@ export function createContainer(): AppContainer {
     getAdminPermissionsUseCase,
     listAdminsUseCase,
     listUsersUseCase,
+    deleteUserUseCase,
   });
 
   const organizationController = new OrganizationController({
