@@ -43,4 +43,13 @@ export interface IOAuthConnectionRepository {
    * @returns Array de conexiones (puede ser vacío)
    */
   findByUserId(userId: string): Promise<OAuthConnection[]>;
+
+  /**
+   * Obtiene todas las conexiones OAuth de un conjunto de usuarios.
+   * Evita el problema N+1 al listar usuarios.
+   *
+   * @param userIds - IDs de los usuarios locales
+   * @returns Array de conexiones para todos los usuarios indicados
+   */
+  findByUserIds(userIds: string[]): Promise<OAuthConnection[]>;
 }

@@ -69,6 +69,9 @@ import { InMemoryAdminPermissionRepository } from '../persistence/in-memory/in-m
 import { PostgresUserRepository } from '../persistence/postgresql/postgres-user.repository.js';
 import { PostgresRefreshTokenRepository } from '../persistence/postgresql/postgres-refresh-token.repository.js';
 import { PostgresPasswordResetTokenRepository } from '../persistence/postgresql/postgres-password-reset-token.repository.js';
+import { PostgresOAuthConnectionRepository } from '../persistence/postgresql/postgres-oauth-connection.repository.js';
+import { PostgresOrganizationRepository } from '../persistence/postgresql/postgres-organization.repository.js';
+import { PostgresOrganizationMembershipRepository } from '../persistence/postgresql/postgres-organization-membership.repository.js';
 
 import { getPool } from '../database/index.js';
 
@@ -178,6 +181,7 @@ export function createContainer(): AppContainer {
   let userRepository: UserRepository;
   let refreshTokenRepository: RefreshTokenRepository;
   let passwordResetTokenRepository: PasswordResetTokenRepository;
+  let oauthConnectionRepository: IOAuthConnectionRepository;
 
   if (usePostgres) {
     const pool = getPool();
@@ -186,19 +190,31 @@ export function createContainer(): AppContainer {
     userRepository = new PostgresUserRepository(pool);
     refreshTokenRepository = new PostgresRefreshTokenRepository(pool);
     passwordResetTokenRepository = new PostgresPasswordResetTokenRepository(pool);
+    oauthConnectionRepository = new PostgresOAuthConnectionRepository(pool);
   } else {
     logger.info('Using InMemory repositories');
 
     userRepository = new InMemoryUserRepository();
     refreshTokenRepository = new InMemoryRefreshTokenRepository();
     passwordResetTokenRepository = new InMemoryPasswordResetTokenRepository();
+    oauthConnectionRepository = new InMemoryOAuthConnectionRepository();
   }
 
   // ============================================
   // RBAC Repositories (Feature 012)
   // ============================================
-  const organizationRepository = new InMemoryOrganizationRepository();
-  const organizationMembershipRepository = new InMemoryOrganizationMembershipRepository();
+  let organizationRepository: IOrganizationRepository;
+  let organizationMembershipRepository: IOrganizationMembershipRepository;
+
+  if (usePostgres) {
+    const pool = getPool();
+    organizationRepository = new PostgresOrganizationRepository(pool);
+    organizationMembershipRepository = new PostgresOrganizationMembershipRepository(pool);
+  } else {
+    organizationRepository = new InMemoryOrganizationRepository();
+    organizationMembershipRepository = new InMemoryOrganizationMembershipRepository();
+  }
+
   const adminPermissionRepository = new InMemoryAdminPermissionRepository();
 
   // ============================================
@@ -315,6 +331,7 @@ export function createContainer(): AppContainer {
     userRepository,
     authorizationService,
     dateTimeService,
+    oauthConnectionRepository,
   });
 
   // ============================================
@@ -409,7 +426,6 @@ export function createContainer(): AppContainer {
     };
   }
 
-  const oauthConnectionRepository = new InMemoryOAuthConnectionRepository();
   const oauthProviderService = new OAuthProviderService(oauthConfig);
 
   const initiateOAuthUseCase = new InitiateOAuthUseCase({
