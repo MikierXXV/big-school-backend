@@ -11,6 +11,7 @@ import { UserRepository } from '../../../domain/repositories/user.repository.int
 import { IAuthorizationService } from '../../ports/authorization.service.port.js';
 import { InsufficientPermissionsError } from '../../../domain/errors/authorization.errors.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
+import { IOAuthConnectionRepository } from '../../../domain/repositories/oauth-connection.repository.interface.js';
 import type {
   ListUsersRequestDto,
   ListUsersResponseDto,
@@ -20,6 +21,7 @@ export interface ListUsersDependencies {
   readonly userRepository: UserRepository;
   readonly authorizationService: IAuthorizationService;
   readonly dateTimeService: IDateTimeService;
+  readonly oauthConnectionRepository: IOAuthConnectionRepository;
 }
 
 export class ListUsersUseCase {
@@ -50,10 +52,18 @@ export class ListUsersUseCase {
       limit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
-      search: request.search,
+      ...(request.search ? { search: request.search } : {}),
     });
 
-    // 3. Map to response DTO
+    // 3. Resolve OAuth providers for all users (single batch query)
+    const userIds = result.items.map((u) => u.id.value);
+    const oauthConnections = await this.deps.oauthConnectionRepository.findByUserIds(userIds);
+    const providerByUserId = new Map<string, 'google' | 'microsoft'>();
+    for (const conn of oauthConnections) {
+      providerByUserId.set(conn.userId.value, conn.provider.value as 'google' | 'microsoft');
+    }
+
+    // 4. Map to response DTO
     const users = result.items.map((user) => ({
       id: user.id.value,
       email: user.email.value,
@@ -64,6 +74,7 @@ export class ListUsersUseCase {
       status: user.status,
       emailVerified: user.isEmailVerified(),
       createdAt: this.deps.dateTimeService.toISOString(user.createdAt),
+      authProvider: providerByUserId.get(user.id.value) ?? ('local' as const),
     }));
 
     return {

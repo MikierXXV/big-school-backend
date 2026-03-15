@@ -64,6 +64,20 @@ export class InMemoryOAuthConnectionRepository implements IOAuthConnectionReposi
     return result;
   }
 
+  /**
+   * Obtiene todas las conexiones OAuth de un conjunto de usuarios.
+   */
+  public async findByUserIds(userIds: string[]): Promise<OAuthConnection[]> {
+    const idSet = new Set(userIds);
+    const result: OAuthConnection[] = [];
+    for (const connection of this.store.values()) {
+      if (idSet.has(connection.userId.value)) {
+        result.push(connection);
+      }
+    }
+    return result;
+  }
+
   // ============================================
   // HELPERS
   // ============================================

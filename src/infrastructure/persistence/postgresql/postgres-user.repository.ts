@@ -241,7 +241,7 @@ export class PostgresUserRepository implements UserRepository {
    * @returns Resultado paginado
    */
   public async findAll(options: PaginationOptions): Promise<PaginatedResult<User>> {
-    const { page, limit, sortBy = 'created_at', sortOrder = 'desc' } = options;
+    const { page, limit, sortBy = 'created_at', sortOrder = 'desc', search } = options;
     const offset = (page - 1) * limit;
 
     // Validar sortBy para prevenir SQL injection
@@ -249,23 +249,35 @@ export class PostgresUserRepository implements UserRepository {
     const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
+    const params: unknown[] = [limit, offset];
+    let whereClause = '';
+    if (search && search.trim()) {
+      params.push(`%${search.trim().toLowerCase()}%`);
+      const idx = params.length;
+      whereClause = `WHERE lower(first_name) LIKE $${idx} OR lower(last_name) LIKE $${idx} OR lower(email) LIKE $${idx}`;
+    }
+
     // Query para datos
     const dataQuery = `
       SELECT id, email, password_hash, first_name, last_name,
              status, system_role, created_at, updated_at, last_login_at, email_verified_at,
              failed_login_attempts, lockout_until, lockout_count, last_failed_login_at
       FROM users
+      ${whereClause}
       ORDER BY ${sortColumn} ${order}
       LIMIT $1 OFFSET $2
     `;
 
     // Query para total
-    const countQuery = 'SELECT COUNT(*) as total FROM users';
+    const countParams = search && search.trim() ? [`%${search.trim().toLowerCase()}%`] : [];
+    const countQuery = search && search.trim()
+      ? `SELECT COUNT(*) as total FROM users WHERE lower(first_name) LIKE $1 OR lower(last_name) LIKE $1 OR lower(email) LIKE $1`
+      : 'SELECT COUNT(*) as total FROM users';
 
     // Ejecutar ambas queries en paralelo
     const [dataResult, countResult] = await Promise.all([
-      this.pool.query<UserRow>(dataQuery, [limit, offset]),
-      this.pool.query<{ total: string }>(countQuery),
+      this.pool.query<UserRow>(dataQuery, params),
+      this.pool.query<{ total: string }>(countQuery, countParams),
     ]);
 
     const countRow = countResult.rows[0];

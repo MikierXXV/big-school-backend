@@ -96,10 +96,18 @@ describe('ListUsers Use Case', () => {
       toLocalString: vi.fn(),
     };
 
+    const mockOAuthConnectionRepository = {
+      save: vi.fn(),
+      findByProviderUserId: vi.fn().mockResolvedValue(null),
+      findByUserId: vi.fn().mockResolvedValue([]),
+      findByUserIds: vi.fn().mockResolvedValue([]),
+    };
+
     const deps: ListUsersDependencies = {
       userRepository: mockUserRepository,
       authorizationService: mockAuthorizationService,
       dateTimeService: mockDateTimeService,
+      oauthConnectionRepository: mockOAuthConnectionRepository,
     };
 
     useCase = new ListUsersUseCase(deps);
