@@ -130,6 +130,12 @@ export function createRBACRoutes(
     adaptRoute(adminController, 'listUsers')
   );
 
+  router.delete(
+    '/users/:userId',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'deleteUser')
+  );
+
   // ============================================
   // Organization Routes
   // ============================================
