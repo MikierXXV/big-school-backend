@@ -193,10 +193,10 @@ test.describe('RBAC - Admin Management E2E', () => {
       if (response.body.success) {
         expect(response.body.data.userId).toBe(regularUserId);
         expect(response.body.data.systemRole).toBe('admin');
-        expect(Array.isArray(response.body.data.grantedPermissions)).toBe(true);
-        expect(response.body.data.grantedPermissions.length).toBeGreaterThan(0);
+        expect(Array.isArray(response.body.data.permissions)).toBe(true);
+        expect(response.body.data.permissions.length).toBeGreaterThan(0);
 
-        const grantedPermission = response.body.data.grantedPermissions.find(
+        const grantedPermission = response.body.data.permissions.find(
           (p: any) => p.permission === 'manage_users'
         );
         expect(grantedPermission).toBeDefined();
@@ -207,6 +207,10 @@ test.describe('RBAC - Admin Management E2E', () => {
     });
 
     test('should be idempotent - granting existing permission succeeds (200)', async ({ request }) => {
+      // Self-contained: ensure user is admin and already has the permission before testing idempotency
+      await promoteToAdmin(request, regularUserId, superAdminToken);
+      await grantPermission(request, regularUserId, 'manage_users', superAdminToken);
+      // Grant the same permission again — should be idempotent (200, no error)
       const response = await post(request, '/api/admin/permissions/grant', {
         userId: regularUserId,
         permissions: ['manage_users'],
@@ -293,10 +297,10 @@ test.describe('RBAC - Admin Management E2E', () => {
       if (response.body.success) {
         expect(response.body.data.userId).toBe(regularUserId);
         expect(response.body.data.systemRole).toBe('admin');
-        expect(Array.isArray(response.body.data.grantedPermissions)).toBe(true);
+        expect(Array.isArray(response.body.data.permissions)).toBe(true);
 
         // Verify that the permission was removed
-        const revokedPermission = response.body.data.grantedPermissions.find(
+        const revokedPermission = response.body.data.permissions.find(
           (p: any) => p.permission === 'manage_users'
         );
         expect(revokedPermission).toBeUndefined();
