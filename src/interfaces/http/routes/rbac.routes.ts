@@ -130,6 +130,18 @@ export function createRBACRoutes(
     adaptRoute(adminController, 'listUsers')
   );
 
+  router.delete(
+    '/users/:userId',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'deleteUser')
+  );
+
+  router.delete(
+    '/users/:userId/permanent',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'hardDeleteUser')
+  );
+
   // ============================================
   // Organization Routes
   // ============================================
@@ -163,6 +175,12 @@ export function createRBACRoutes(
     '/organizations/:id',
     createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_organizations' }),
     adaptRoute(organizationController, 'deactivate')
+  );
+
+  router.delete(
+    '/organizations/:id/permanent',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_organizations' }),
+    adaptRoute(organizationController, 'hardDelete')
   );
 
   // ============================================

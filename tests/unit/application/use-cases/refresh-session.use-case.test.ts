@@ -126,6 +126,7 @@ describe('RefreshSession Use Case', () => {
       save: vi.fn().mockResolvedValue(undefined),
       update: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
+      hardDelete: vi.fn().mockResolvedValue(undefined),
       findById: vi.fn().mockResolvedValue(createActiveUser()),
       findByEmail: vi.fn().mockResolvedValue(createActiveUser()),
       existsByEmail: vi.fn().mockResolvedValue(true),

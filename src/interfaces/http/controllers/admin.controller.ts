@@ -28,6 +28,8 @@ import { RevokeAdminPermissionUseCase } from '../../../application/use-cases/adm
 import { GetAdminPermissionsUseCase } from '../../../application/use-cases/admin/get-admin-permissions.use-case.js';
 import { ListAdminsUseCase } from '../../../application/use-cases/admin/list-admins.use-case.js';
 import { ListUsersUseCase } from '../../../application/use-cases/user/list-users.use-case.js';
+import { DeleteUserUseCase, DeleteUserResponseDto } from '../../../application/use-cases/user/delete-user.use-case.js';
+import { HardDeleteUserUseCase } from '../../../application/use-cases/user/hard-delete-user.use-case.js';
 import type { ListUsersResponseDto } from '../../../application/dtos/user/list-users.dto.js';
 import {
   PromoteToAdminRequestDto,
@@ -51,6 +53,8 @@ export interface AdminControllerDependencies {
   readonly getAdminPermissionsUseCase: GetAdminPermissionsUseCase;
   readonly listAdminsUseCase: ListAdminsUseCase;
   readonly listUsersUseCase: ListUsersUseCase;
+  readonly deleteUserUseCase: DeleteUserUseCase;
+  readonly hardDeleteUserUseCase: HardDeleteUserUseCase;
 }
 
 /**
@@ -233,6 +237,52 @@ export class AdminController {
       limit,
       search,
     });
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja DELETE /users/:userId
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con usuario desactivado
+   */
+  public async deleteUser(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<DeleteUserResponseDto>> {
+    const executorId = request.user!.userId;
+    const targetUserId = request.params.userId || '';
+
+    const result = await this.deps.deleteUserUseCase.execute(targetUserId, executorId);
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja DELETE /users/:userId/permanent
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con usuario eliminado permanentemente
+   */
+  public async hardDeleteUser(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<{ id: string; email: string }>> {
+    const executorId = request.user!.userId;
+    const targetUserId = request.params.userId || '';
+
+    const result = await this.deps.hardDeleteUserUseCase.execute(targetUserId, executorId);
 
     return {
       statusCode: 200,

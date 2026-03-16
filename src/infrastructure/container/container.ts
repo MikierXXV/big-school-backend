@@ -40,11 +40,14 @@ import { RevokeAdminPermissionUseCase } from '../../application/use-cases/admin/
 import { GetAdminPermissionsUseCase } from '../../application/use-cases/admin/get-admin-permissions.use-case.js';
 import { ListAdminsUseCase } from '../../application/use-cases/admin/list-admins.use-case.js';
 import { ListUsersUseCase } from '../../application/use-cases/user/list-users.use-case.js';
+import { DeleteUserUseCase } from '../../application/use-cases/user/delete-user.use-case.js';
+import { HardDeleteUserUseCase } from '../../application/use-cases/user/hard-delete-user.use-case.js';
 import { CreateOrganizationUseCase } from '../../application/use-cases/organization/create-organization.use-case.js';
 import { GetOrganizationUseCase } from '../../application/use-cases/organization/get-organization.use-case.js';
 import { ListOrganizationsUseCase } from '../../application/use-cases/organization/list-organizations.use-case.js';
 import { UpdateOrganizationUseCase } from '../../application/use-cases/organization/update-organization.use-case.js';
 import { DeleteOrganizationUseCase } from '../../application/use-cases/organization/delete-organization.use-case.js';
+import { HardDeleteOrganizationUseCase } from '../../application/use-cases/organization/hard-delete-organization.use-case.js';
 import { AssignUserToOrganizationUseCase } from '../../application/use-cases/membership/assign-user-to-organization.use-case.js';
 import { RemoveUserFromOrganizationUseCase } from '../../application/use-cases/membership/remove-user-from-organization.use-case.js';
 import { ChangeUserOrganizationRoleUseCase } from '../../application/use-cases/membership/change-user-organization-role.use-case.js';
@@ -334,6 +337,17 @@ export function createContainer(): AppContainer {
     oauthConnectionRepository,
   });
 
+  const deleteUserUseCase = new DeleteUserUseCase({
+    userRepository,
+    authorizationService,
+    dateTimeService,
+  });
+
+  const hardDeleteUserUseCase = new HardDeleteUserUseCase({
+    userRepository,
+    authorizationService,
+  });
+
   // ============================================
   // Organization Use Cases (Feature 012)
   // ============================================
@@ -364,6 +378,11 @@ export function createContainer(): AppContainer {
   });
 
   const deleteOrganizationUseCase = new DeleteOrganizationUseCase({
+    organizationRepository,
+    authorizationService,
+  });
+
+  const hardDeleteOrganizationUseCase = new HardDeleteOrganizationUseCase({
     organizationRepository,
     authorizationService,
   });
@@ -461,6 +480,8 @@ export function createContainer(): AppContainer {
     getAdminPermissionsUseCase,
     listAdminsUseCase,
     listUsersUseCase,
+    deleteUserUseCase,
+    hardDeleteUserUseCase,
   });
 
   const organizationController = new OrganizationController({
@@ -469,6 +490,7 @@ export function createContainer(): AppContainer {
     listOrganizationsUseCase,
     updateOrganizationUseCase,
     deleteOrganizationUseCase,
+    hardDeleteOrganizationUseCase,
   });
 
   const organizationMembershipController = new OrganizationMembershipController({

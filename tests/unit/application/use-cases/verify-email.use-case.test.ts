@@ -92,6 +92,7 @@ describe('VerifyEmail Use Case', () => {
       save: vi.fn().mockResolvedValue(undefined),
       update: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
+      hardDelete: vi.fn().mockResolvedValue(undefined),
       findById: vi.fn().mockResolvedValue(createMockUser()),
       findByEmail: vi.fn().mockResolvedValue(null),
       existsByEmail: vi.fn().mockResolvedValue(false),

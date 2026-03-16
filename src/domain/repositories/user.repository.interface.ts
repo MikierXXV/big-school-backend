@@ -69,6 +69,15 @@ export interface UserRepository {
    */
   delete(userId: UserId): Promise<void>;
 
+  /**
+   * Elimina permanentemente un usuario (hard delete).
+   *
+   * @param id - ID del usuario como string
+   * @returns Promise<void>
+   * @throws UserNotFoundError si no existe
+   */
+  hardDelete(id: string): Promise<void>;
+
   // ============================================
   // QUERIES (solo lectura)
   // ============================================
@@ -142,6 +151,8 @@ export interface PaginationOptions {
   readonly sortOrder?: 'asc' | 'desc';
   /** Búsqueda por nombre o email */
   readonly search?: string;
+  /** Excluir usuarios con estos estados */
+  readonly excludeStatuses?: string[];
 }
 
 /**

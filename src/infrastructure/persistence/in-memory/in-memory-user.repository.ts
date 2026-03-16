@@ -95,6 +95,22 @@ export class InMemoryUserRepository implements UserRepository {
   }
 
   /**
+   * Elimina permanentemente un usuario.
+   *
+   * @param id - ID del usuario como string
+   * @throws UserNotFoundError si no existe
+   */
+  public async hardDelete(id: string): Promise<void> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new UserNotFoundError(id);
+    }
+
+    this.emailIndex.delete(user.email.value);
+    this.users.delete(id);
+  }
+
+  /**
    * Busca un usuario por ID.
    *
    * @param id - ID del usuario
@@ -138,6 +154,11 @@ export class InMemoryUserRepository implements UserRepository {
     options: PaginationOptions
   ): Promise<PaginatedResult<User>> {
     let allUsers = Array.from(this.users.values());
+
+    // Excluir estados si se especifica
+    if (options.excludeStatuses && options.excludeStatuses.length > 0) {
+      allUsers = allUsers.filter((u) => !options.excludeStatuses!.includes(u.status));
+    }
 
     // Filtrar por búsqueda si se especifica
     if (options.search) {

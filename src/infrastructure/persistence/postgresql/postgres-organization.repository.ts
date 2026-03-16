@@ -150,6 +150,10 @@ export class PostgresOrganizationRepository implements IOrganizationRepository {
     );
   }
 
+  public async hardDelete(id: string): Promise<void> {
+    await this.pool.query('DELETE FROM organizations WHERE id = $1', [id]);
+  }
+
   private rowToEntity(row: OrganizationRow): Organization {
     return Organization.fromPersistence({
       id: row.id,

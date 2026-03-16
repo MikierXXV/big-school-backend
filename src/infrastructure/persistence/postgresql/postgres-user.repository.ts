@@ -171,6 +171,15 @@ export class PostgresUserRepository implements UserRepository {
   }
 
   /**
+   * Elimina permanentemente un usuario.
+   *
+   * @param id - ID del usuario como string
+   */
+  public async hardDelete(id: string): Promise<void> {
+    await this.pool.query('DELETE FROM users WHERE id = $1', [id]);
+  }
+
+  /**
    * Busca un usuario por ID.
    *
    * @param id - ID del usuario
@@ -250,12 +259,23 @@ export class PostgresUserRepository implements UserRepository {
     const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
     const params: unknown[] = [limit, offset];
-    let whereClause = '';
+    const conditions: string[] = [];
+
     if (search && search.trim()) {
       params.push(`%${search.trim().toLowerCase()}%`);
       const idx = params.length;
-      whereClause = `WHERE lower(first_name) LIKE $${idx} OR lower(last_name) LIKE $${idx} OR lower(email) LIKE $${idx}`;
+      conditions.push(`(lower(first_name) LIKE $${idx} OR lower(last_name) LIKE $${idx} OR lower(email) LIKE $${idx})`);
     }
+
+    if (options.excludeStatuses && options.excludeStatuses.length > 0) {
+      const placeholders = options.excludeStatuses.map((_, i) => {
+        params.push(options.excludeStatuses![i]);
+        return `$${params.length}`;
+      });
+      conditions.push(`status NOT IN (${placeholders.join(', ')})`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // Query para datos
     const dataQuery = `
@@ -268,11 +288,23 @@ export class PostgresUserRepository implements UserRepository {
       LIMIT $1 OFFSET $2
     `;
 
-    // Query para total
-    const countParams = search && search.trim() ? [`%${search.trim().toLowerCase()}%`] : [];
-    const countQuery = search && search.trim()
-      ? `SELECT COUNT(*) as total FROM users WHERE lower(first_name) LIKE $1 OR lower(last_name) LIKE $1 OR lower(email) LIKE $1`
-      : 'SELECT COUNT(*) as total FROM users';
+    // Query para total — reconstruir params sin limit/offset
+    const countConditions: string[] = [];
+    const countParams: unknown[] = [];
+    if (search && search.trim()) {
+      countParams.push(`%${search.trim().toLowerCase()}%`);
+      const idx = countParams.length;
+      countConditions.push(`(lower(first_name) LIKE $${idx} OR lower(last_name) LIKE $${idx} OR lower(email) LIKE $${idx})`);
+    }
+    if (options.excludeStatuses && options.excludeStatuses.length > 0) {
+      const placeholders = options.excludeStatuses.map((s) => {
+        countParams.push(s);
+        return `$${countParams.length}`;
+      });
+      countConditions.push(`status NOT IN (${placeholders.join(', ')})`);
+    }
+    const countWhere = countConditions.length > 0 ? `WHERE ${countConditions.join(' AND ')}` : '';
+    const countQuery = `SELECT COUNT(*) as total FROM users ${countWhere}`;
 
     // Ejecutar ambas queries en paralelo
     const [dataResult, countResult] = await Promise.all([
