@@ -95,6 +95,22 @@ export class InMemoryUserRepository implements UserRepository {
   }
 
   /**
+   * Elimina permanentemente un usuario.
+   *
+   * @param id - ID del usuario como string
+   * @throws UserNotFoundError si no existe
+   */
+  public async hardDelete(id: string): Promise<void> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new UserNotFoundError(id);
+    }
+
+    this.emailIndex.delete(user.email.value);
+    this.users.delete(id);
+  }
+
+  /**
    * Busca un usuario por ID.
    *
    * @param id - ID del usuario

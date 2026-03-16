@@ -65,6 +65,7 @@ describe('ListUsers Use Case', () => {
       save: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      hardDelete: vi.fn(),
       findById: vi.fn(),
       findByEmail: vi.fn(),
       existsByEmail: vi.fn(),
@@ -150,7 +151,6 @@ describe('ListUsers Use Case', () => {
         limit: 20,
         sortBy: 'createdAt',
         sortOrder: 'desc',
-        excludeStatuses: ['DEACTIVATED'],
       });
     });
 
@@ -164,7 +164,6 @@ describe('ListUsers Use Case', () => {
         limit: 10,
         sortBy: 'createdAt',
         sortOrder: 'desc',
-        excludeStatuses: ['DEACTIVATED'],
       });
     });
   });

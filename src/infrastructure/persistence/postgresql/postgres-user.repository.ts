@@ -171,6 +171,15 @@ export class PostgresUserRepository implements UserRepository {
   }
 
   /**
+   * Elimina permanentemente un usuario.
+   *
+   * @param id - ID del usuario como string
+   */
+  public async hardDelete(id: string): Promise<void> {
+    await this.pool.query('DELETE FROM users WHERE id = $1', [id]);
+  }
+
+  /**
    * Busca un usuario por ID.
    *
    * @param id - ID del usuario

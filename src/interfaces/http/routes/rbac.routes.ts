@@ -136,6 +136,12 @@ export function createRBACRoutes(
     adaptRoute(adminController, 'deleteUser')
   );
 
+  router.delete(
+    '/users/:userId/permanent',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'hardDeleteUser')
+  );
+
   // ============================================
   // Organization Routes
   // ============================================

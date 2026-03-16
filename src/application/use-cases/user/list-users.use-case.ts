@@ -52,7 +52,6 @@ export class ListUsersUseCase {
       limit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
-      excludeStatuses: ['DEACTIVATED'],
       ...(request.search ? { search: request.search } : {}),
     });
 
