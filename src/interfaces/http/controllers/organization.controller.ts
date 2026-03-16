@@ -26,6 +26,7 @@ import { GetOrganizationUseCase } from '../../../application/use-cases/organizat
 import { ListOrganizationsUseCase } from '../../../application/use-cases/organization/list-organizations.use-case.js';
 import { UpdateOrganizationUseCase } from '../../../application/use-cases/organization/update-organization.use-case.js';
 import { DeleteOrganizationUseCase } from '../../../application/use-cases/organization/delete-organization.use-case.js';
+import { HardDeleteOrganizationUseCase } from '../../../application/use-cases/organization/hard-delete-organization.use-case.js';
 import {
   CreateOrganizationRequestDto,
   UpdateOrganizationRequestDto,
@@ -44,6 +45,7 @@ export interface OrganizationControllerDependencies {
   readonly listOrganizationsUseCase: ListOrganizationsUseCase;
   readonly updateOrganizationUseCase: UpdateOrganizationUseCase;
   readonly deleteOrganizationUseCase: DeleteOrganizationUseCase;
+  readonly hardDeleteOrganizationUseCase: HardDeleteOrganizationUseCase;
 }
 
 /**
@@ -210,6 +212,29 @@ export class OrganizationController {
     const organizationId = request.params.id || '';
 
     const result = await this.deps.deleteOrganizationUseCase.execute(organizationId, executorId);
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja DELETE /organizations/:id/permanent
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con datos de la organización eliminada permanentemente
+   */
+  public async hardDelete(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<{ id: string; name: string }>> {
+    const executorId = request.user!.userId;
+    const organizationId = request.params.id || '';
+
+    const result = await this.deps.hardDeleteOrganizationUseCase.execute(organizationId, executorId);
 
     return {
       statusCode: 200,

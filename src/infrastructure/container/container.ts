@@ -46,6 +46,7 @@ import { GetOrganizationUseCase } from '../../application/use-cases/organization
 import { ListOrganizationsUseCase } from '../../application/use-cases/organization/list-organizations.use-case.js';
 import { UpdateOrganizationUseCase } from '../../application/use-cases/organization/update-organization.use-case.js';
 import { DeleteOrganizationUseCase } from '../../application/use-cases/organization/delete-organization.use-case.js';
+import { HardDeleteOrganizationUseCase } from '../../application/use-cases/organization/hard-delete-organization.use-case.js';
 import { AssignUserToOrganizationUseCase } from '../../application/use-cases/membership/assign-user-to-organization.use-case.js';
 import { RemoveUserFromOrganizationUseCase } from '../../application/use-cases/membership/remove-user-from-organization.use-case.js';
 import { ChangeUserOrganizationRoleUseCase } from '../../application/use-cases/membership/change-user-organization-role.use-case.js';
@@ -375,6 +376,11 @@ export function createContainer(): AppContainer {
     authorizationService,
   });
 
+  const hardDeleteOrganizationUseCase = new HardDeleteOrganizationUseCase({
+    organizationRepository,
+    authorizationService,
+  });
+
   // ============================================
   // Membership Use Cases (Feature 012)
   // ============================================
@@ -477,6 +483,7 @@ export function createContainer(): AppContainer {
     listOrganizationsUseCase,
     updateOrganizationUseCase,
     deleteOrganizationUseCase,
+    hardDeleteOrganizationUseCase,
   });
 
   const organizationMembershipController = new OrganizationMembershipController({

@@ -74,4 +74,10 @@ export interface IOrganizationRepository {
    * @returns Promise resolving to void
    */
   delete(id: string): Promise<void>;
+
+  /**
+   * Permanently removes an organization from the system.
+   * @param id - Organization ID
+   */
+  hardDelete(id: string): Promise<void>;
 }

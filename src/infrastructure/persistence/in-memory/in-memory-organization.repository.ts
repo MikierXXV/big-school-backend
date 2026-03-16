@@ -111,6 +111,21 @@ export class InMemoryOrganizationRepository implements IOrganizationRepository {
   }
 
   /**
+   * Permanently removes an organization from storage.
+   *
+   * @param id - Organization ID
+   * @throws OrganizationNotFoundError if not found
+   */
+  public async hardDelete(id: string): Promise<void> {
+    const org = this.organizations.get(id);
+    if (!org) {
+      throw new OrganizationNotFoundError(id);
+    }
+    this.nameIndex.delete(org.name);
+    this.organizations.delete(id);
+  }
+
+  /**
    * Finds an organization by ID.
    *
    * @param id - Organization ID

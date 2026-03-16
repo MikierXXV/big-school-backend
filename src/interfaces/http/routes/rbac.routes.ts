@@ -171,6 +171,12 @@ export function createRBACRoutes(
     adaptRoute(organizationController, 'deactivate')
   );
 
+  router.delete(
+    '/organizations/:id/permanent',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_organizations' }),
+    adaptRoute(organizationController, 'hardDelete')
+  );
+
   // ============================================
   // Membership Routes
   // ============================================
