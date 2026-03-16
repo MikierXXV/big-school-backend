@@ -139,6 +139,11 @@ export class InMemoryUserRepository implements UserRepository {
   ): Promise<PaginatedResult<User>> {
     let allUsers = Array.from(this.users.values());
 
+    // Excluir estados si se especifica
+    if (options.excludeStatuses && options.excludeStatuses.length > 0) {
+      allUsers = allUsers.filter((u) => !options.excludeStatuses!.includes(u.status));
+    }
+
     // Filtrar por búsqueda si se especifica
     if (options.search) {
       const term = options.search.toLowerCase();

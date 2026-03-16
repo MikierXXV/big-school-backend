@@ -142,6 +142,8 @@ export interface PaginationOptions {
   readonly sortOrder?: 'asc' | 'desc';
   /** Búsqueda por nombre o email */
   readonly search?: string;
+  /** Excluir usuarios con estos estados */
+  readonly excludeStatuses?: string[];
 }
 
 /**

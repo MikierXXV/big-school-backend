@@ -150,6 +150,7 @@ describe('ListUsers Use Case', () => {
         limit: 20,
         sortBy: 'createdAt',
         sortOrder: 'desc',
+        excludeStatuses: ['DEACTIVATED'],
       });
     });
 
@@ -163,6 +164,7 @@ describe('ListUsers Use Case', () => {
         limit: 10,
         sortBy: 'createdAt',
         sortOrder: 'desc',
+        excludeStatuses: ['DEACTIVATED'],
       });
     });
   });
