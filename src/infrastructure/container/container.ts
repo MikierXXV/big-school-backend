@@ -40,6 +40,7 @@ import { RevokeAdminPermissionUseCase } from '../../application/use-cases/admin/
 import { GetAdminPermissionsUseCase } from '../../application/use-cases/admin/get-admin-permissions.use-case.js';
 import { ListAdminsUseCase } from '../../application/use-cases/admin/list-admins.use-case.js';
 import { ListUsersUseCase } from '../../application/use-cases/user/list-users.use-case.js';
+import { GetUserStatsUseCase } from '../../application/use-cases/user/get-user-stats.use-case.js';
 import { DeleteUserUseCase } from '../../application/use-cases/user/delete-user.use-case.js';
 import { HardDeleteUserUseCase } from '../../application/use-cases/user/hard-delete-user.use-case.js';
 import { CreateOrganizationUseCase } from '../../application/use-cases/organization/create-organization.use-case.js';
@@ -337,6 +338,12 @@ export function createContainer(): AppContainer {
     oauthConnectionRepository,
   });
 
+  const getUserStatsUseCase = new GetUserStatsUseCase({
+    userRepository,
+    oauthConnectionRepository,
+    authorizationService,
+  });
+
   const deleteUserUseCase = new DeleteUserUseCase({
     userRepository,
     authorizationService,
@@ -480,6 +487,7 @@ export function createContainer(): AppContainer {
     getAdminPermissionsUseCase,
     listAdminsUseCase,
     listUsersUseCase,
+    getUserStatsUseCase,
     deleteUserUseCase,
     hardDeleteUserUseCase,
   });

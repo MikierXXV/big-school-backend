@@ -53,6 +53,7 @@ export class ListUsersUseCase {
       sortBy: 'createdAt',
       sortOrder: 'desc',
       ...(request.search ? { search: request.search } : {}),
+      ...(request.role ? { role: request.role } : {}),
     });
 
     // 3. Resolve OAuth providers for all users (single batch query)

@@ -28,9 +28,11 @@ import { RevokeAdminPermissionUseCase } from '../../../application/use-cases/adm
 import { GetAdminPermissionsUseCase } from '../../../application/use-cases/admin/get-admin-permissions.use-case.js';
 import { ListAdminsUseCase } from '../../../application/use-cases/admin/list-admins.use-case.js';
 import { ListUsersUseCase } from '../../../application/use-cases/user/list-users.use-case.js';
+import { GetUserStatsUseCase } from '../../../application/use-cases/user/get-user-stats.use-case.js';
 import { DeleteUserUseCase, DeleteUserResponseDto } from '../../../application/use-cases/user/delete-user.use-case.js';
 import { HardDeleteUserUseCase } from '../../../application/use-cases/user/hard-delete-user.use-case.js';
 import type { ListUsersResponseDto } from '../../../application/dtos/user/list-users.dto.js';
+import type { GetUserStatsResponseDto } from '../../../application/dtos/user/user-stats.dto.js';
 import {
   PromoteToAdminRequestDto,
   DemoteToUserRequestDto,
@@ -53,6 +55,7 @@ export interface AdminControllerDependencies {
   readonly getAdminPermissionsUseCase: GetAdminPermissionsUseCase;
   readonly listAdminsUseCase: ListAdminsUseCase;
   readonly listUsersUseCase: ListUsersUseCase;
+  readonly getUserStatsUseCase: GetUserStatsUseCase;
   readonly deleteUserUseCase: DeleteUserUseCase;
   readonly hardDeleteUserUseCase: HardDeleteUserUseCase;
 }
@@ -170,6 +173,29 @@ export class AdminController {
   }
 
   /**
+   * Maneja GET /admin/my-permissions
+   * Self-read: any authenticated admin can fetch their own permissions.
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con los permisos del usuario actual
+   */
+  public async getMyPermissions(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<AdminPermissionsResponseDto>> {
+    const userId = request.user!.userId;
+
+    const result = await this.deps.getAdminPermissionsUseCase.execute(userId, userId);
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
    * Maneja GET /admin/:userId/permissions
    *
    * @param request - Request HTTP autenticado
@@ -230,13 +256,37 @@ export class AdminController {
     const page = request.query.page ? parseInt(request.query.page, 10) : 1;
     const limit = request.query.limit ? parseInt(request.query.limit, 10) : 20;
     const search = request.query.search || undefined;
+    const role = request.query.role || undefined;
 
     const result = await this.deps.listUsersUseCase.execute({
       executorId,
       page,
       limit,
       search,
+      role,
     });
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja GET /users/stats
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con estadísticas agregadas de usuarios
+   */
+  public async getUserStats(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<GetUserStatsResponseDto>> {
+    const executorId = request.user!.userId;
+
+    const result = await this.deps.getUserStatsUseCase.execute({ executorId });
 
     return {
       statusCode: 200,

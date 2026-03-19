@@ -29,6 +29,7 @@ import {
   UserRepository,
   PaginationOptions,
   PaginatedResult,
+  UserStatsData,
 } from '../../../domain/repositories/user.repository.interface.js';
 import { User, UserStatus, UserProps } from '../../../domain/entities/user.entity.js';
 import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
@@ -275,6 +276,11 @@ export class PostgresUserRepository implements UserRepository {
       conditions.push(`status NOT IN (${placeholders.join(', ')})`);
     }
 
+    if (options.role && options.role.trim()) {
+      params.push(options.role.trim());
+      conditions.push(`system_role = $${params.length}`);
+    }
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     // Query para datos
@@ -303,6 +309,10 @@ export class PostgresUserRepository implements UserRepository {
       });
       countConditions.push(`status NOT IN (${placeholders.join(', ')})`);
     }
+    if (options.role && options.role.trim()) {
+      countParams.push(options.role.trim());
+      countConditions.push(`system_role = $${countParams.length}`);
+    }
     const countWhere = countConditions.length > 0 ? `WHERE ${countConditions.join(' AND ')}` : '';
     const countQuery = `SELECT COUNT(*) as total FROM users ${countWhere}`;
 
@@ -325,6 +335,49 @@ export class PostgresUserRepository implements UserRepository {
       hasNext: page < totalPages,
       hasPrevious: page > 1,
     };
+  }
+
+  /**
+   * Obtiene estadísticas agregadas de usuarios.
+   * Una sola query GROUP BY — eficiente para cualquier volumen.
+   */
+  public async getStats(): Promise<UserStatsData> {
+    const groupQuery = `
+      SELECT system_role, status, COUNT(*) AS count
+      FROM users
+      GROUP BY system_role, status
+    `;
+
+    const emailQuery = `
+      SELECT COUNT(*) AS total, COUNT(email_verified_at) AS email_verified
+      FROM users
+    `;
+
+    const [groupResult, emailResult] = await Promise.all([
+      this.pool.query<{ system_role: string; status: string; count: string }>(groupQuery),
+      this.pool.query<{ total: string; email_verified: string }>(emailQuery),
+    ]);
+
+    const byRole = { user: 0, admin: 0, super_admin: 0 };
+    const byStatus = { active: 0, suspended: 0, pending_verification: 0, deactivated: 0 };
+    let total = 0;
+
+    for (const row of groupResult.rows) {
+      const count = parseInt(row.count, 10);
+      total += count;
+
+      if (row.system_role in byRole) {
+        byRole[row.system_role as keyof typeof byRole] += count;
+      }
+      if (row.status in byStatus) {
+        byStatus[row.status as keyof typeof byStatus] += count;
+      }
+    }
+
+    const emailRow = emailResult.rows[0];
+    const emailVerified = emailRow ? parseInt(emailRow.email_verified, 10) : 0;
+
+    return { total, emailVerified, byRole, byStatus };
   }
 
   /**

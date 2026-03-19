@@ -47,19 +47,27 @@ export class RemoveUserFromOrganizationUseCase {
 
     // 1. Check permissions
     const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
-    const hasAssignMembers = await this.deps.authorizationService.hasAdminPermission(
+    const hasManageOrgs = await this.deps.authorizationService.hasAdminPermission(
       executorId,
-      'assign_members'
+      'manage_organizations'
     );
     const userRole = await this.deps.authorizationService.getUserOrganizationRole(
       executorId,
       request.organizationId
     );
 
-    const canRemove = isSuperAdmin || hasAssignMembers || userRole === 'org_admin';
+    const canRemove = isSuperAdmin || hasManageOrgs || userRole === 'org_admin';
 
     if (!canRemove) {
       throw new InsufficientPermissionsError('Remove members', executorId);
+    }
+
+    // Guard: non-super-admin cannot remove a super_admin member
+    if (!isSuperAdmin) {
+      const targetIsSuperAdmin = await this.deps.authorizationService.isSuperAdmin(request.userId);
+      if (targetIsSuperAdmin) {
+        throw new InsufficientPermissionsError('Remove super admin from organization', executorId);
+      }
     }
 
     // 2. Find membership

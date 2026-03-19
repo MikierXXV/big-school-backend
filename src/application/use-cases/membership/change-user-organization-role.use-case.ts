@@ -38,19 +38,27 @@ export class ChangeUserOrganizationRoleUseCase {
 
     // 1. Check permissions
     const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
-    const hasAssignMembers = await this.deps.authorizationService.hasAdminPermission(
+    const hasManageOrgs = await this.deps.authorizationService.hasAdminPermission(
       executorId,
-      'assign_members'
+      'manage_organizations'
     );
     const userRole = await this.deps.authorizationService.getUserOrganizationRole(
       executorId,
       request.organizationId
     );
 
-    const canChange = isSuperAdmin || hasAssignMembers || userRole === 'org_admin';
+    const canChange = isSuperAdmin || hasManageOrgs || userRole === 'org_admin';
 
     if (!canChange) {
       throw new InsufficientPermissionsError('Change member role', executorId);
+    }
+
+    // Guard: non-super-admin cannot change the role of a super_admin member
+    if (!isSuperAdmin) {
+      const targetIsSuperAdmin = await this.deps.authorizationService.isSuperAdmin(request.userId);
+      if (targetIsSuperAdmin) {
+        throw new InsufficientPermissionsError('Change super admin role', executorId);
+      }
     }
 
     // 2. Find membership and verify it exists

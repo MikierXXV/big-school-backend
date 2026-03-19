@@ -119,6 +119,27 @@ export class PostgresOAuthConnectionRepository implements IOAuthConnectionReposi
     return result.rows.map((row) => this.rowToEntity(row));
   }
 
+  /**
+   * Cuenta conexiones OAuth agrupadas por proveedor (DISTINCT user_id).
+   */
+  public async countByProvider(): Promise<{ google: number; microsoft: number }> {
+    const query = `
+      SELECT provider, COUNT(DISTINCT user_id) AS count
+      FROM oauth_connections
+      GROUP BY provider
+    `;
+
+    const result = await this.pool.query<{ provider: string; count: string }>(query);
+
+    const counts = { google: 0, microsoft: 0 };
+    for (const row of result.rows) {
+      if (row.provider === 'google' || row.provider === 'microsoft') {
+        counts[row.provider] = parseInt(row.count, 10);
+      }
+    }
+    return counts;
+  }
+
   // ============================================
   // HELPERS
   // ============================================

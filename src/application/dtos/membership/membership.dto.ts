@@ -66,6 +66,8 @@ export interface MembershipResponseDto {
   readonly firstName: string;
   /** User last name */
   readonly lastName: string;
+  /** System role of the user (user | admin | super_admin) */
+  readonly systemRole?: string;
 }
 
 /**
