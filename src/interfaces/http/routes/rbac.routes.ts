@@ -115,6 +115,13 @@ export function createRBACRoutes(
     adaptRoute(adminController, 'list')
   );
 
+  // Self-read: any authenticated user can fetch their OWN permissions (bootstrap for admin panel)
+  // IMPORTANT: must be declared BEFORE /admin/:userId/permissions to avoid route conflict
+  router.get(
+    '/admin/my-permissions',
+    adaptRoute(adminController, 'getMyPermissions')
+  );
+
   router.get(
     '/admin/:userId/permissions',
     createAuthorizationMiddleware(authorizationMiddleware, { requireSuperAdmin: true }),
@@ -124,6 +131,15 @@ export function createRBACRoutes(
   // ============================================
   // User Routes (require SUPER_ADMIN or manage_users)
   // ============================================
+
+  // IMPORTANT: /users/stats must be declared before /users/:userId
+  // to prevent 'stats' being parsed as a userId param
+  router.get(
+    '/users/stats',
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'getUserStats')
+  );
+
   router.get(
     '/users',
     createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
@@ -190,7 +206,7 @@ export function createRBACRoutes(
     '/organizations/:organizationId/members',
     createValidationMiddleware(validateAssignMember),
     createAuthorizationMiddleware(authorizationMiddleware, {
-      permission: 'assign_members',
+      permission: 'manage_organizations',
       organizationIdParam: 'organizationId',
     }),
     adaptRoute(membershipController, 'assign')
@@ -199,7 +215,7 @@ export function createRBACRoutes(
   router.delete(
     '/organizations/:organizationId/members/:userId',
     createAuthorizationMiddleware(authorizationMiddleware, {
-      permission: 'assign_members',
+      permission: 'manage_organizations',
       organizationIdParam: 'organizationId',
     }),
     adaptRoute(membershipController, 'remove')
@@ -209,7 +225,7 @@ export function createRBACRoutes(
     '/organizations/:organizationId/members/:userId/role',
     createValidationMiddleware(validateChangeRole),
     createAuthorizationMiddleware(authorizationMiddleware, {
-      permission: 'assign_members',
+      permission: 'manage_organizations',
       organizationIdParam: 'organizationId',
     }),
     adaptRoute(membershipController, 'changeRole')

@@ -74,6 +74,7 @@ export class GetOrganizationMembersUseCase {
         email: user?.email.value || '',
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
+        systemRole: user?.systemRole.getValue(),
       };
 
       // Only add leftAt if it exists

@@ -39,7 +39,7 @@ export class AssignUserToOrganizationUseCase {
     const isSuperAdmin = await this.deps.authorizationService.isSuperAdmin(executorId);
     const hasAssignMembers = await this.deps.authorizationService.hasAdminPermission(
       executorId,
-      'assign_members'
+      'manage_organizations'
     );
     const userRole = await this.deps.authorizationService.getUserOrganizationRole(
       executorId,
@@ -99,6 +99,7 @@ export class AssignUserToOrganizationUseCase {
       email: user.email.value,
       firstName: user.firstName,
       lastName: user.lastName,
+      systemRole: user.systemRole.getValue(),
     };
   }
 }

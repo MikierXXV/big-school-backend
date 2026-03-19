@@ -78,6 +78,16 @@ export class InMemoryOAuthConnectionRepository implements IOAuthConnectionReposi
     return result;
   }
 
+  public async countByProvider(): Promise<{ google: number; microsoft: number }> {
+    const googleUsers = new Set<string>();
+    const microsoftUsers = new Set<string>();
+    for (const conn of this.store.values()) {
+      if (conn.provider.value === 'google') googleUsers.add(conn.userId.value);
+      if (conn.provider.value === 'microsoft') microsoftUsers.add(conn.userId.value);
+    }
+    return { google: googleUsers.size, microsoft: microsoftUsers.size };
+  }
+
   // ============================================
   // HELPERS
   // ============================================

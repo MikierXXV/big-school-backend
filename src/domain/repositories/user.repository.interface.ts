@@ -135,6 +135,14 @@ export interface UserRepository {
    * TODO: Implementar en infraestructura
    */
   findBySystemRole(systemRoles: string[]): Promise<User[]>;
+
+  /**
+   * Obtiene estadísticas agregadas de usuarios (counts por role y status).
+   * Utilizado para el panel de analytics del administrador.
+   *
+   * @returns Conteos agrupados por role y status
+   */
+  getStats(): Promise<UserStatsData>;
 }
 
 /**
@@ -153,6 +161,23 @@ export interface PaginationOptions {
   readonly search?: string;
   /** Excluir usuarios con estos estados */
   readonly excludeStatuses?: string[];
+  /** Filtrar por rol de sistema */
+  readonly role?: string;
+}
+
+/**
+ * Estadísticas agregadas de usuarios
+ */
+export interface UserStatsData {
+  readonly total: number;
+  readonly emailVerified: number;
+  readonly byRole: { readonly user: number; readonly admin: number; readonly super_admin: number };
+  readonly byStatus: {
+    readonly active: number;
+    readonly suspended: number;
+    readonly pending_verification: number;
+    readonly deactivated: number;
+  };
 }
 
 /**

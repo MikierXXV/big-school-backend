@@ -17,6 +17,7 @@ import {
   UserRepository,
   PaginationOptions,
   PaginatedResult,
+  UserStatsData,
 } from '../../../domain/repositories/user.repository.interface.js';
 import { User } from '../../../domain/entities/user.entity.js';
 import { UserId } from '../../../domain/value-objects/user-id.value-object.js';
@@ -210,6 +211,21 @@ export class InMemoryUserRepository implements UserRepository {
     return allUsers.filter((user) =>
       systemRoles.includes(user.systemRole.getValue())
     );
+  }
+
+  public async getStats(): Promise<UserStatsData> {
+    const allUsers = Array.from(this.users.values());
+    const byRole = { user: 0, admin: 0, super_admin: 0 };
+    const byStatus = { active: 0, suspended: 0, pending_verification: 0, deactivated: 0 };
+    let emailVerified = 0;
+    for (const u of allUsers) {
+      const role = u.systemRole.getValue() as keyof typeof byRole;
+      const status = (u.status as unknown) as keyof typeof byStatus;
+      if (role in byRole) byRole[role]++;
+      if (status in byStatus) byStatus[status]++;
+      if (u.emailVerifiedAt !== null) emailVerified++;
+    }
+    return { total: allUsers.length, emailVerified, byRole, byStatus };
   }
 
   // ============================================

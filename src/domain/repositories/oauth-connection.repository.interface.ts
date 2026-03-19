@@ -52,4 +52,13 @@ export interface IOAuthConnectionRepository {
    * @returns Array de conexiones para todos los usuarios indicados
    */
   findByUserIds(userIds: string[]): Promise<OAuthConnection[]>;
+
+  /**
+   * Cuenta conexiones OAuth agrupadas por proveedor.
+   * Cada usuario se cuenta una sola vez por proveedor (DISTINCT user_id).
+   * Utilizado para estadísticas del panel de analytics.
+   *
+   * @returns Objeto con el count de usuarios por proveedor
+   */
+  countByProvider(): Promise<{ google: number; microsoft: number }>;
 }

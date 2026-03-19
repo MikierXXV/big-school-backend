@@ -18,6 +18,8 @@ export interface ListUsersRequestDto {
   readonly limit?: number;
   /** Búsqueda por email o nombre */
   readonly search?: string | undefined;
+  /** Filtrar por rol de sistema ('user', 'admin', 'super_admin') */
+  readonly role?: string | undefined;
 }
 
 /**
