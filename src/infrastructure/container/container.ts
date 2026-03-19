@@ -62,6 +62,8 @@ import { BcryptHashingService } from '../services/bcrypt-hashing.service.js';
 import { JwtTokenService } from '../services/jwt-token.service.js';
 import { InMemoryRateLimiter } from '../services/in-memory-rate-limiter.service.js';
 import { RBACAuthorizationService } from '../services/rbac-authorization.service.js';
+import { ResendEmailService } from '../services/resend-email.service.js';
+import type { IEmailService } from '../../application/ports/email.service.port.js';
 
 import { InMemoryUserRepository } from '../persistence/in-memory/in-memory-user.repository.js';
 import { InMemoryRefreshTokenRepository } from '../persistence/in-memory/in-memory-refresh-token.repository.js';
@@ -177,6 +179,21 @@ export function createContainer(): AppContainer {
   const tokenService: ITokenService = new JwtTokenService(jwtConfig, dateTimeService);
   const rateLimiter: IRateLimiter = new InMemoryRateLimiter();
 
+  // Email service — activo solo si RESEND_API_KEY está configurada
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const emailFrom = process.env.EMAIL_FROM ?? 'noreply@example.com';
+  const appBaseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+  const appName = process.env.APP_NAME ?? 'Health Care Suite';
+  const emailService: IEmailService | undefined = resendApiKey
+    ? new ResendEmailService(resendApiKey, emailFrom, appName)
+    : undefined;
+
+  if (emailService) {
+    logger.info('Email service configured (Resend)', { from: emailFrom });
+  } else {
+    logger.info('Email service not configured — verification tokens will be returned in responses (development mode)');
+  }
+
   // ============================================
   // 3. REPOSITORIES (PostgreSQL or InMemory)
   // ============================================
@@ -241,6 +258,8 @@ export function createContainer(): AppContainer {
     tokenService,
     logger: logger.child({ useCase: 'RegisterUser' }),
     isProduction: envConfig.server.isProduction,
+    appBaseUrl,
+    ...(emailService ? { emailService } : {}),
   });
 
   const loginUserUseCase = new LoginUserUseCase({
@@ -276,6 +295,8 @@ export function createContainer(): AppContainer {
     uuidGenerator,
     dateTimeService,
     logger: logger.child({ useCase: 'RequestPasswordReset' }),
+    appBaseUrl,
+    ...(emailService ? { emailService } : {}),
   });
 
   const confirmPasswordResetUseCase = new ConfirmPasswordResetUseCase({
