@@ -38,6 +38,7 @@ import { ITokenService } from '../../ports/token.service.port.js';
 import { IUuidGenerator } from '../../ports/uuid-generator.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
 import { ILogger } from '../../ports/logger.port.js';
+import { IEmailService } from '../../ports/email.service.port.js';
 import {
   RequestPasswordResetRequestDto,
   RequestPasswordResetResponseDto,
@@ -53,6 +54,10 @@ export interface RequestPasswordResetDependencies {
   readonly uuidGenerator: IUuidGenerator;
   readonly dateTimeService: IDateTimeService;
   readonly logger: ILogger;
+  /** Servicio de email para enviar el link de reset. Si no se provee, el token se devuelve en la respuesta (desarrollo). */
+  readonly emailService?: IEmailService;
+  /** URL base de la aplicación para construir el link de reset (ej: https://app.bigschool.com) */
+  readonly appBaseUrl?: string;
 }
 
 /**
@@ -161,13 +166,24 @@ export class RequestPasswordResetUseCase {
       expiresAt: expiresAt.toISOString(),
     });
 
-    // 10. Retornar respuesta
-    // En desarrollo incluimos el token para testing
-    const isDevelopment = process.env['NODE_ENV'] !== 'production';
+    // 10. Enviar email de reset (solo en producción con emailService configurado)
+    const isProduction = process.env['NODE_ENV'] === 'production';
+    if (this.deps.emailService && isProduction) {
+      const baseUrl = this.deps.appBaseUrl ?? 'http://localhost:3000';
+      const resetLink = `${baseUrl}/auth/reset-password?token=${accessToken.value}`;
+      await this.deps.emailService.sendPasswordResetEmail({
+        to: user.email.value,
+        firstName: user.firstName,
+        resetLink,
+      });
+      this.deps.logger.info('Password reset email sent', { userId: user.id.value });
+    }
 
+    // 11. Retornar respuesta
+    // En desarrollo incluimos el token para testing
     return {
       message: GENERIC_SUCCESS_MESSAGE,
-      ...(isDevelopment && { resetToken: accessToken.value }),
+      ...(!isProduction && { resetToken: accessToken.value }),
     };
   }
 

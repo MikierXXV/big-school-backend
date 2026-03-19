@@ -35,6 +35,7 @@ import { IUuidGenerator } from '../../ports/uuid-generator.port.js';
 import { IDateTimeService } from '../../ports/datetime.service.port.js';
 import { ITokenService } from '../../ports/token.service.port.js';
 import { ILogger } from '../../ports/logger.port.js';
+import { IEmailService } from '../../ports/email.service.port.js';
 import {
   RegisterUserRequestDto,
   RegisterUserResponseDto,
@@ -57,6 +58,10 @@ export interface RegisterUserDependencies {
   readonly logger: ILogger;
   /** Indica si estamos en producción (no incluir token en respuesta) */
   readonly isProduction?: boolean;
+  /** Servicio de email para enviar verificación. Si no se provee, el token se devuelve en la respuesta (desarrollo). */
+  readonly emailService?: IEmailService;
+  /** URL base de la aplicación para construir el link de verificación (ej: https://app.bigschool.com) */
+  readonly appBaseUrl?: string;
 }
 
 /**
@@ -144,12 +149,24 @@ export class RegisterUserUseCase {
       claims: { purpose: 'email_verification' },
     });
 
-    // 12. Log éxito
+    // 12. Enviar email de verificación (solo en producción con emailService configurado)
+    if (this.deps.emailService && this.deps.isProduction) {
+      const baseUrl = this.deps.appBaseUrl ?? 'http://localhost:3000';
+      const verificationLink = `${baseUrl}/verify-email?token=${verificationToken.value}`;
+      await this.deps.emailService.sendVerificationEmail({
+        to: user.email.value,
+        firstName: user.firstName,
+        verificationLink,
+      });
+      this.deps.logger.info('Verification email sent', { userId: userId.value });
+    }
+
+    // 13. Log éxito
     this.deps.logger.info('User registered successfully', { userId: userId.value });
 
-    // 13. Retornar DTO de respuesta
+    // 14. Retornar DTO de respuesta
     // En desarrollo, incluimos el token para facilitar testing
-    // En producción, el token se enviaría por email
+    // En producción, el token se envía por email (no se expone en la respuesta)
     const response: RegisterUserResponseDto = {
       success: true,
       message: 'User registered successfully. Please verify your email.',
