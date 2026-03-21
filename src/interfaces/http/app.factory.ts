@@ -92,8 +92,12 @@ interface RequestWithContext extends Request {
 export function createApp(deps: AppDependencies): Express {
   const app = express();
 
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : ['*'];
+
   app.use(cors({
-    origin: ['*'],
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
