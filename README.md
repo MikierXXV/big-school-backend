@@ -1,62 +1,111 @@
-# Big School Backend
+# Health Care Suite — Backend
 
-Backend de autenticación para Big School, implementado con Clean Architecture, Arquitectura Hexagonal y Domain-Driven Design.
+Sistema de autenticación y autorización de nivel empresarial para la plataforma de gestión hospitalaria Health Care Suite. Implementado con **Clean Architecture**, **Arquitectura Hexagonal (Ports & Adapters)** y **Domain-Driven Design**.
 
-## Stack Tecnológico
+## Stack tecnológico
 
-- **Runtime**: Node.js
-- **Lenguaje**: TypeScript
-- **Tests unitarios**: Vitest
-- **Tests E2E**: Playwright
-- **Autenticación**: JWT (Access Token + Refresh Token)
+| Categoría | Tecnología |
+|-----------|-----------|
+| Runtime | Node.js 20+ |
+| Lenguaje | TypeScript 5.3 |
+| HTTP Framework | Express.js 5 |
+| Base de datos | PostgreSQL 16 |
+| ORM/Driver | node-postgres (pg) |
+| Autenticación | JWT (access + refresh token rotation) |
+| Hashing | bcrypt (12 rounds) |
+| Email | Resend SDK |
+| Testing | Vitest + Playwright |
 
-## Estructura del Proyecto
+## Requisitos previos
 
-```
-src/
-├── domain/          # Entidades, Value Objects, interfaces de repositorios
-├── application/     # Casos de uso, DTOs, puertos (interfaces de servicios)
-├── infrastructure/  # Implementaciones de repositorios y servicios
-└── interfaces/      # Controllers, rutas, middlewares HTTP
-```
+- **Node.js** ≥ 20
+- **Docker + Docker Compose** (para la base de datos local)
+- **Git**
 
-## Comandos
+## Setup local
 
 ```bash
-# Instalar dependencias
+# 1. Entrar al directorio
+cd backend
+
+# 2. Copiar variables de entorno (los defaults funcionan para desarrollo local)
+cp .env.example .env
+
+# 3. Levantar PostgreSQL con Docker
+docker compose up -d
+
+# 4. Instalar dependencias
 npm install
 
-# Desarrollo con hot reload
+# 5. Ejecutar migraciones y seed del super admin inicial
+npm run migrate
+
+# 6. Iniciar el servidor con hot reload
 npm run dev
-
-# Compilar TypeScript
-npm run build
-
-# Verificar tipos
-npm run typecheck
-
-# Ejecutar tests
-npm test
-
-# Tests unitarios
-npm run test:unit
-
-# Tests de integración
-npm run test:integration
-
-# Tests E2E
-npm run test:e2e
 ```
 
-## Configuración
+El servidor arranca en **http://localhost:3000**.
 
-1. Copiar `.env.example` a `.env`
-2. Configurar las variables de entorno
+**Verificar que funciona:**
+```bash
+curl http://localhost:3000/health
+# → { "status": "ok", "version": "..." }
+```
 
-## Documentación
+> **Nota sobre emails:** en desarrollo, si no hay `RESEND_API_KEY` configurada, los tokens de verificación de email y reset de contraseña se devuelven directamente en la respuesta HTTP (no se envían emails). Esto es el comportamiento esperado para desarrollo local.
 
-Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para detalles de la arquitectura.
+## Scripts
 
-## Estado
+| Script | Descripción |
+|--------|-------------|
+| `npm run dev` | Servidor de desarrollo con hot reload (`tsx watch`) |
+| `npm run build` | Compilar TypeScript a `dist/` |
+| `npm start` | Iniciar servidor compilado (producción) |
+| `npm run typecheck` | Verificar tipos sin compilar |
+| `npm run lint` | Linting con ESLint |
+| `npm run migrate` | Ejecutar migraciones de base de datos + seed |
+| `npm test` | Tests en modo watch |
+| `npm run test:unit` | Tests unitarios |
+| `npm run test:integration` | Tests de integración (requiere BD) |
+| `npm run test:e2e` | Tests E2E con Playwright |
+| `npm run test:coverage` | Tests con informe de cobertura |
 
-Este proyecto contiene la estructura y stubs. La implementación está pendiente.
+## Testing
+
+```bash
+# Todos los tests (modo watch)
+npm test
+
+# Solo unitarios (sin BD)
+npm run test:unit
+
+# Integración (requiere docker compose up -d)
+npm run test:integration
+
+# Cobertura
+npm run test:coverage
+```
+
+## Arquitectura
+
+Cuatro capas con la regla de dependencia apuntando hacia adentro:
+
+```
+Interfaces → Application → Domain
+     ↓            ↓
+Infrastructure ───┘
+```
+
+- **Domain** — Entidades, Value Objects, interfaces de repositorios, errores de dominio
+- **Application** — Casos de uso (29), DTOs, puertos (interfaces de servicios)
+- **Infrastructure** — Repositorios PostgreSQL/InMemory, servicios (JWT, bcrypt, Resend, OAuth)
+- **Interfaces** — Controllers HTTP, rutas, middlewares, validators
+
+Para la documentación completa del proyecto ver [docs/PROJECT.md](docs/PROJECT.md).
+
+## Producción
+
+El backend está desplegado en **Render Free**:
+`https://health-care-suite-backend.onrender.com`
+
+Ver [docs/PROJECT.md — Sección 18](docs/PROJECT.md) para detalles del entorno de producción, limitaciones del free tier y variables de entorno requeridas.
