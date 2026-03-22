@@ -19,6 +19,7 @@
 15. [Scripts npm](#15-scripts-npm)
 16. [Testing](#16-testing)
 17. [Documentación de features](#17-documentación-de-features)
+18. [Producción](#18-producción)
 
 ---
 
@@ -990,6 +991,84 @@ Documentos en `backend/docs/`:
 | `feature-010-rate-limiting-lockout.md` | Rate limiting + bloqueo de cuentas |
 | `feature-011-oauth2-authentication.md` | OAuth2 con Google y Microsoft |
 | `feature-012-rbac-organizations.md` | RBAC completo + organizaciones (14 iteraciones) |
+
+---
+
+---
+
+## 18. Producción
+
+### Plataformas
+
+| Componente | Plataforma | Plan |
+|-----------|-----------|------|
+| API (este servicio) | Render | Free |
+| Base de datos | Neon PostgreSQL | Free |
+| Frontend | Vercel | Hobby |
+
+### URLs
+
+| Recurso | URL |
+|---------|-----|
+| API | `https://health-care-suite-backend.onrender.com` |
+| Health check | `https://health-care-suite-backend.onrender.com/health` |
+| Frontend | `https://health-care-suite-frontend.vercel.app` |
+
+### Limitaciones del Free Tier
+
+#### Render Free
+
+- **Cold start:** el servicio se duerme tras **15 min de inactividad**; la primera petición tarda ~30-50 s en despertar.
+- **RAM:** 512 MB | **CPU:** compartida (sin garantía de rendimiento)
+- **Ancho de banda:** 100 GB/mes
+- **Uptime:** no garantizado; Render puede pausar el servicio si necesita recursos del host.
+- **Dominio:** URL tipo `*.onrender.com`; no incluye dominio personalizado en el plan gratuito.
+
+**Mitigaciones aplicadas:**
+
+| Mitigación | Detalle |
+|-----------|---------|
+| Timeout HTTP aumentado | El cliente Axios del frontend usa **60 000 ms** (`axios-http-client.ts`) para absorber el cold start |
+| UptimeRobot | Configurar monitor HTTP gratuito cada **5 min** apuntando a `/health` para mantener el servicio activo |
+
+> **Nota:** estas limitaciones desaparecen al desplegar en servidores propios de la empresa.
+
+#### Neon PostgreSQL Free
+
+- **Storage:** 0,5 GB
+- **Compute:** se pausa tras 5 min de inactividad del proyecto; su cold start se suma al de Render.
+- **Compute hours:** ~192 h/mes (suficiente para uso de desarrollo y demo)
+- **Conexiones concurrentes:** ~100
+
+### Variables de entorno en Render
+
+Configurar en Render → Settings → Environment Variables:
+
+| Variable | Valor / Descripción |
+|----------|---------------------|
+| `NODE_ENV` | `production` |
+| `USE_POSTGRES` | `true` |
+| `PORT` | `3000` |
+| `HOST` | `0.0.0.0` |
+| `DATABASE_URL` | Connection string de Neon (incluye SSL) |
+| `DATABASE_SSL` | `true` |
+| `JWT_ACCESS_SECRET` | Secreto mínimo 32 chars |
+| `JWT_REFRESH_SECRET` | Secreto mínimo 32 chars |
+| `JWT_PASSWORD_RESET_SECRET` | Secreto mínimo 32 chars |
+| `CORS_ORIGIN` | `https://health-care-suite-frontend.vercel.app` |
+| `APP_BASE_URL` | `https://health-care-suite-frontend.vercel.app` |
+| `APP_NAME` | `Health Care Suite` |
+| `OAUTH_STATE_SECRET` | Secreto para JWT de estado OAuth (mín 48 chars) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Credenciales OAuth Google |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Credenciales OAuth Microsoft |
+| `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD` | Credenciales del super admin inicial |
+| `SUPER_ADMIN_FIRST_NAME` / `SUPER_ADMIN_LAST_NAME` | Nombre del super admin inicial |
+
+### Start Command (Render)
+
+```
+npm run build && npm run migrate && npm start
+```
 
 ---
 
