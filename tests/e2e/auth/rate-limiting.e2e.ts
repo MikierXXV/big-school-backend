@@ -51,22 +51,19 @@ test.describe('Rate Limiting E2E', () => {
       // Use a unique fixed IP for this test so all requests share the same rate limit bucket
       const testIp = generateUniqueIp();
 
-      // The auth rate limit is 5 requests per minute
-      // Make 7 rapid requests to exceed the limit
-      const responses = [];
+      // Read the actual configured auth rate limit from the first response header
+      const firstResponse = await post(request, '/auth/register', generateValidUserData(), { clientIp: testIp });
+      const limit = parseInt(firstResponse.headers['x-ratelimit-limit'] ?? '5');
 
-      for (let i = 0; i < 7; i++) {
-        const userData = generateValidUserData();
-        const response = await post(request, '/auth/register', userData, { clientIp: testIp });
-        responses.push(response);
+      // Exhaust the remaining slots (already used 1)
+      for (let i = 1; i < limit; i++) {
+        await post(request, '/auth/register', generateValidUserData(), { clientIp: testIp });
       }
 
-      // At least one should be rate limited (429)
-      const rateLimited = responses.filter(r => r.status === 429);
-      expect(rateLimited.length).toBeGreaterThan(0);
+      // Next request should be rate limited
+      const limitedResponse = await post(request, '/auth/register', generateValidUserData(), { clientIp: testIp });
 
-      // Verify rate limited response structure
-      const limitedResponse = rateLimited[0];
+      expect(limitedResponse.status).toBe(429);
       expect(limitedResponse.body.success).toBe(false);
       if (!limitedResponse.body.success) {
         expect(limitedResponse.body.error.code).toBe('RATE_LIMIT_EXCEEDED');
@@ -81,15 +78,17 @@ test.describe('Rate Limiting E2E', () => {
       // Use a unique fixed IP for this test
       const testIp = generateUniqueIp();
 
-      // Exhaust the rate limit (5 requests)
-      for (let i = 0; i < 5; i++) {
-        const userData = generateValidUserData();
-        await post(request, '/auth/register', userData, { clientIp: testIp });
+      // Read the actual configured auth rate limit from the first response header
+      const firstResponse = await post(request, '/auth/register', generateValidUserData(), { clientIp: testIp });
+      const limit = parseInt(firstResponse.headers['x-ratelimit-limit'] ?? '5');
+
+      // Exhaust the remaining slots (already used 1)
+      for (let i = 1; i < limit; i++) {
+        await post(request, '/auth/register', generateValidUserData(), { clientIp: testIp });
       }
 
-      // 6th request should be rate limited
-      const userData = generateValidUserData();
-      const response = await post(request, '/auth/register', userData, { clientIp: testIp });
+      // Next request should be rate limited with proper structure
+      const response = await post(request, '/auth/register', generateValidUserData(), { clientIp: testIp });
 
       expect(response.status).toBe(429);
       expect(response.body.success).toBe(false);
@@ -110,22 +109,28 @@ test.describe('Rate Limiting E2E', () => {
       // Use a unique fixed IP for this test
       const testIp = generateUniqueIp();
 
-      // Make 7 login attempts with the same IP
-      const responses = [];
+      // Read the actual configured auth rate limit from the first response header
+      const firstResponse = await post(request, '/auth/login', {
+        email: 'rl_login_0@notexist.example.com',
+        password: 'TestP@ssword123',
+      }, { clientIp: testIp });
+      const limit = parseInt(firstResponse.headers['x-ratelimit-limit'] ?? '5');
 
-      for (let i = 0; i < 7; i++) {
-        const response = await post(request, '/auth/login', {
-          email: `test${i}@example.com`,
+      // Exhaust the remaining slots (already used 1)
+      for (let i = 1; i < limit; i++) {
+        await post(request, '/auth/login', {
+          email: `rl_login_${i}@notexist.example.com`,
           password: 'TestP@ssword123',
         }, { clientIp: testIp });
-        responses.push(response);
       }
 
-      // Check if any got rate limited
-      const rateLimited = responses.filter(r => r.status === 429);
+      // Next request should be rate limited
+      const rateLimitedResponse = await post(request, '/auth/login', {
+        email: `rl_login_${limit}@notexist.example.com`,
+        password: 'TestP@ssword123',
+      }, { clientIp: testIp });
 
-      // At least one should be rate limited after exceeding the limit
-      expect(rateLimited.length).toBeGreaterThan(0);
+      expect(rateLimitedResponse.status).toBe(429);
     });
   });
 
