@@ -369,8 +369,9 @@ export class PostgresUserRepository implements UserRepository {
       if (row.system_role in byRole) {
         byRole[row.system_role as keyof typeof byRole] += count;
       }
-      if (row.status in byStatus) {
-        byStatus[row.status as keyof typeof byStatus] += count;
+      const statusKey = row.status.toLowerCase() as keyof typeof byStatus;
+      if (statusKey in byStatus) {
+        byStatus[statusKey] += count;
       }
     }
 
