@@ -327,7 +327,7 @@ Los puertos definen qué necesita la capa de aplicación sin importar cómo est�
 
 ---
 
-### 5.2 Use Cases (29 total)
+### 5.2 Use Cases (30 total)
 
 #### Autenticación (8)
 
@@ -342,12 +342,13 @@ Los puertos definen qué necesita la capa de aplicación sin importar cómo est�
 | **InitiateOAuthUseCase** | `initiate-oauth.use-case.ts` | Genera URL de autorización + state JWT (5 min). |
 | **HandleOAuthCallbackUseCase** | `handle-oauth-callback.use-case.ts` | Intercambia code por tokens. Crea o vincula cuenta. |
 
-#### Gestión de usuarios (4)
+#### Gestión de usuarios (5)
 
 | Use Case | Descripción |
 |----------|-------------|
 | **ListUsersUseCase** | Lista todos los usuarios con paginación y filtros por rol/estado |
 | **GetUserStatsUseCase** | Estadísticas de usuarios: total, por rol, por estado, verificados |
+| **UpdateUserStatusUseCase** | Cambia el estado de un usuario (ACTIVE / SUSPENDED / DEACTIVATED) |
 | **DeleteUserUseCase** | Soft-delete (status → DEACTIVATED) |
 | **HardDeleteUserUseCase** | Eliminación permanente de la base de datos |
 
@@ -476,7 +477,7 @@ Composition root del sistema. La función `createContainer()` instancia y conect
 1. Lee configuración (env, JWT, OAuth)
 2. Instancia servicios (Logger, DateTime, UUID, Hashing, Token, RateLimiter, Email, OAuth)
 3. Elige repositorios (USE_POSTGRES=true → PostgreSQL, false → InMemory)
-4. Instancia los 29 use cases con dependencias inyectadas
+4. Instancia los 30 use cases con dependencias inyectadas
 5. Instancia los 6 controllers
 6. Instancia middlewares
 7. Retorna el contenedor completo
@@ -565,6 +566,7 @@ Los templates son HTML inline (sin dependencias externas), compatible con todos 
 |--------|------|----------|-------------|
 | `GET` | `/admin/users` | SUPER_ADMIN | Listar todos los usuarios |
 | `GET` | `/admin/users/stats` | SUPER_ADMIN | Estadísticas de usuarios |
+| `PATCH` | `/admin/users/:id/status` | ADMIN + `manage_users` | Cambiar estado de usuario (ACTIVE / SUSPENDED / DEACTIVATED) |
 | `DELETE` | `/admin/users/:id` | SUPER_ADMIN | Soft-delete usuario |
 | `DELETE` | `/admin/users/:id/hard` | SUPER_ADMIN | Hard-delete usuario |
 | `POST` | `/admin/users/:id/promote` | SUPER_ADMIN | Promover a ADMIN |
@@ -939,7 +941,7 @@ Ejecutar desde `/backend`:
 
 ```
 tests/
-├── unit/              # 52 archivos — lógica sin dependencias externas
+├── unit/              # 53 archivos — lógica sin dependencias externas
 │   ├── domain/
 │   │   ├── entities/  # user.entity, organization.entity, etc.
 │   │   └── value-objects/ # email, password-hash, system-role, etc.
@@ -966,7 +968,7 @@ tests/
 
 | Tipo | Archivos | Estado |
 |------|---------|--------|
-| Unit | 52 | Todos pasando |
+| Unit | 53 | Todos pasando |
 | Integration | 1 | Pasando |
 | E2E | 0 | Playwright configurado |
 

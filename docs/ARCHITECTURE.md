@@ -268,7 +268,7 @@ Protección in-memory contra abuso de endpoints críticos.
 | OAuthProvider | `IOAuthProviderService` | `OAuthProviderService` |
 | Email | `IEmailService` | `ResendEmailService` (opcional) |
 
-### Application Layer — Use Cases (29)
+### Application Layer — Use Cases (30)
 
 | Módulo | Use Case | Descripción |
 |--------|----------|-------------|
@@ -298,6 +298,7 @@ Protección in-memory contra abuso de endpoints críticos.
 | membership | `GetUserOrganizationsUseCase` | Orgs de un usuario |
 | membership | `RemoveUserFromOrganizationUseCase` | Eliminar miembro |
 | user | `ListUsersUseCase` | Listar usuarios (admin) |
+| user | `UpdateUserStatusUseCase` | Cambiar estado de usuario (ACTIVE / SUSPENDED / DEACTIVATED) |
 | user | `DeleteUserUseCase` | Soft delete usuario |
 | user | `HardDeleteUserUseCase` | Hard delete usuario |
 | user | `GetUserStatsUseCase` | Estadísticas de usuarios |
@@ -454,6 +455,7 @@ backend/
 │   │   │   │   └── remove-user-from-organization.use-case.ts
 │   │   │   ├── user/
 │   │   │   │   ├── list-users.use-case.ts
+│   │   │   │   ├── update-user-status.use-case.ts
 │   │   │   │   ├── delete-user.use-case.ts
 │   │   │   │   ├── hard-delete-user.use-case.ts
 │   │   │   │   └── get-user-stats.use-case.ts
