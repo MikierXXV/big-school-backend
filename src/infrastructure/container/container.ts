@@ -43,6 +43,7 @@ import { ListUsersUseCase } from '../../application/use-cases/user/list-users.us
 import { GetUserStatsUseCase } from '../../application/use-cases/user/get-user-stats.use-case.js';
 import { DeleteUserUseCase } from '../../application/use-cases/user/delete-user.use-case.js';
 import { HardDeleteUserUseCase } from '../../application/use-cases/user/hard-delete-user.use-case.js';
+import { UpdateUserStatusUseCase } from '../../application/use-cases/user/update-user-status.use-case.js';
 import { CreateOrganizationUseCase } from '../../application/use-cases/organization/create-organization.use-case.js';
 import { GetOrganizationUseCase } from '../../application/use-cases/organization/get-organization.use-case.js';
 import { ListOrganizationsUseCase } from '../../application/use-cases/organization/list-organizations.use-case.js';
@@ -376,6 +377,12 @@ export function createContainer(): AppContainer {
     authorizationService,
   });
 
+  const updateUserStatusUseCase = new UpdateUserStatusUseCase({
+    userRepository,
+    authorizationService,
+    dateTimeService,
+  });
+
   // ============================================
   // Organization Use Cases (Feature 012)
   // ============================================
@@ -511,6 +518,7 @@ export function createContainer(): AppContainer {
     getUserStatsUseCase,
     deleteUserUseCase,
     hardDeleteUserUseCase,
+    updateUserStatusUseCase,
   });
 
   const organizationController = new OrganizationController({
