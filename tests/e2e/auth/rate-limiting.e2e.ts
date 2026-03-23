@@ -48,6 +48,9 @@ test.describe('Rate Limiting E2E', () => {
 
   test.describe('Auth Endpoint Rate Limit', () => {
     test('should block requests when auth rate limit exceeded', async ({ request }) => {
+      // Timeout scales with limit × bcrypt cost (RATE_LIMIT_AUTH_MAX=20, HASH_SALT_ROUNDS=12 ≈ 20s+)
+      test.setTimeout(120000);
+
       // Use a unique fixed IP for this test so all requests share the same rate limit bucket
       const testIp = generateUniqueIp();
 
@@ -75,6 +78,9 @@ test.describe('Rate Limiting E2E', () => {
     });
 
     test('should return 429 with proper error structure', async ({ request }) => {
+      // Timeout scales with limit × bcrypt cost (RATE_LIMIT_AUTH_MAX=20, HASH_SALT_ROUNDS=12 ≈ 20s+)
+      test.setTimeout(120000);
+
       // Use a unique fixed IP for this test
       const testIp = generateUniqueIp();
 
