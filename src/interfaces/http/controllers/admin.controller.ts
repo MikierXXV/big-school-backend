@@ -31,6 +31,7 @@ import { ListUsersUseCase } from '../../../application/use-cases/user/list-users
 import { GetUserStatsUseCase } from '../../../application/use-cases/user/get-user-stats.use-case.js';
 import { DeleteUserUseCase, DeleteUserResponseDto } from '../../../application/use-cases/user/delete-user.use-case.js';
 import { HardDeleteUserUseCase } from '../../../application/use-cases/user/hard-delete-user.use-case.js';
+import { UpdateUserStatusUseCase, UpdateUserStatusResponseDto } from '../../../application/use-cases/user/update-user-status.use-case.js';
 import type { ListUsersResponseDto } from '../../../application/dtos/user/list-users.dto.js';
 import type { GetUserStatsResponseDto } from '../../../application/dtos/user/user-stats.dto.js';
 import {
@@ -58,6 +59,7 @@ export interface AdminControllerDependencies {
   readonly getUserStatsUseCase: GetUserStatsUseCase;
   readonly deleteUserUseCase: DeleteUserUseCase;
   readonly hardDeleteUserUseCase: HardDeleteUserUseCase;
+  readonly updateUserStatusUseCase: UpdateUserStatusUseCase;
 }
 
 /**
@@ -333,6 +335,33 @@ export class AdminController {
     const targetUserId = request.params.userId || '';
 
     const result = await this.deps.hardDeleteUserUseCase.execute(targetUserId, executorId);
+
+    return {
+      statusCode: 200,
+      body: {
+        success: true,
+        data: result,
+      },
+    };
+  }
+
+  /**
+   * Maneja PATCH /users/:userId/status
+   *
+   * @param request - Request HTTP autenticado
+   * @returns Response HTTP con usuario actualizado
+   */
+  public async updateUserStatus(
+    request: AuthenticatedRequest
+  ): Promise<HttpResponse<UpdateUserStatusResponseDto>> {
+    const executorId = request.user!.userId;
+    const targetUserId = request.params.userId || '';
+    const { status } = request.body as { status: string };
+
+    const result = await this.deps.updateUserStatusUseCase.execute(
+      { targetUserId, newStatus: status as 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' },
+      executorId
+    );
 
     return {
       statusCode: 200,

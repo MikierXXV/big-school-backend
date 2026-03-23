@@ -31,6 +31,7 @@ import {
   validateAssignMember,
   validateChangeRole,
 } from '../validators/membership.validators.js';
+import { validateUpdateUserStatus } from '../validators/admin.validators.js';
 
 /**
  * Crea un middleware de Express para verificar permisos.
@@ -156,6 +157,13 @@ export function createRBACRoutes(
     '/users/:userId/permanent',
     createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
     adaptRoute(adminController, 'hardDeleteUser')
+  );
+
+  router.patch(
+    '/users/:userId/status',
+    createValidationMiddleware(validateUpdateUserStatus),
+    createAuthorizationMiddleware(authorizationMiddleware, { permission: 'manage_users' }),
+    adaptRoute(adminController, 'updateUserStatus')
   );
 
   // ============================================

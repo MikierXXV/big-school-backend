@@ -207,3 +207,45 @@ export function validateRevokePermission(body: unknown): ValidationResult {
     errors,
   };
 }
+
+/**
+ * Estados de usuario válidos como destino.
+ */
+const VALID_USER_STATUSES = ['ACTIVE', 'SUSPENDED', 'DEACTIVATED'];
+
+/**
+ * Valida request de cambio de estado de usuario.
+ *
+ * @param body - Body del request
+ * @returns Resultado de validación
+ */
+export function validateUpdateUserStatus(body: unknown): ValidationResult {
+  const errors: ValidationFieldError[] = [];
+
+  if (!body || typeof body !== 'object') {
+    return {
+      isValid: false,
+      errors: [{ field: 'body', message: 'Request body is required' }],
+    };
+  }
+
+  const data = body as Record<string, unknown>;
+
+  if (!data.status) {
+    errors.push({ field: 'status', message: 'status is required' });
+  } else if (typeof data.status !== 'string') {
+    errors.push({ field: 'status', message: 'status must be a string' });
+  } else if (!VALID_USER_STATUSES.includes(data.status)) {
+    errors.push({
+      field: 'status',
+      message: `status must be one of: ${VALID_USER_STATUSES.join(', ')}`,
+      expectedFormat: VALID_USER_STATUSES.join(', '),
+      receivedValue: data.status,
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
