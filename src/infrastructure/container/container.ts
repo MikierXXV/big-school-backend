@@ -79,6 +79,7 @@ import { PostgresPasswordResetTokenRepository } from '../persistence/postgresql/
 import { PostgresOAuthConnectionRepository } from '../persistence/postgresql/postgres-oauth-connection.repository.js';
 import { PostgresOrganizationRepository } from '../persistence/postgresql/postgres-organization.repository.js';
 import { PostgresOrganizationMembershipRepository } from '../persistence/postgresql/postgres-organization-membership.repository.js';
+import { PostgresAdminPermissionRepository } from '../persistence/postgresql/postgres-admin-permission.repository.js';
 
 import { getPool } from '../database/index.js';
 
@@ -228,16 +229,18 @@ export function createContainer(): AppContainer {
   let organizationRepository: IOrganizationRepository;
   let organizationMembershipRepository: IOrganizationMembershipRepository;
 
+  let adminPermissionRepository: IAdminPermissionRepository;
+
   if (usePostgres) {
     const pool = getPool();
     organizationRepository = new PostgresOrganizationRepository(pool);
     organizationMembershipRepository = new PostgresOrganizationMembershipRepository(pool);
+    adminPermissionRepository = new PostgresAdminPermissionRepository(pool);
   } else {
     organizationRepository = new InMemoryOrganizationRepository();
     organizationMembershipRepository = new InMemoryOrganizationMembershipRepository();
+    adminPermissionRepository = new InMemoryAdminPermissionRepository();
   }
-
-  const adminPermissionRepository = new InMemoryAdminPermissionRepository();
 
   // ============================================
   // Authorization Service (Feature 012)
