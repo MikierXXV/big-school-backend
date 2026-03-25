@@ -99,6 +99,7 @@ export interface UserOrganizationsResponseDto {
     readonly organizationType: string;
     readonly role: string;
     readonly joinedAt: Date;
+    readonly isActive: boolean;
   }[];
   /** Total number of organizations */
   readonly total: number;

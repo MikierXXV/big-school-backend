@@ -71,6 +71,7 @@ export class GetUserOrganizationsUseCase {
           organizationType: org.type.getValue(),
           role: membership.role.getValue(),
           joinedAt: membership.joinedAt,
+          isActive: org.active,
         });
       }
     }
